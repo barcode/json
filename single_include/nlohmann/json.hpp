@@ -2420,12 +2420,13 @@ using is_detected_convertible =
              class NumberUnsignedType, class NumberFloatType,              \
              template<typename> class AllocatorType,                       \
              template<typename, typename = void> class JSONSerializer,     \
-             class BinaryType>
+             class BinaryType,                                             \
+             class CustomBaseClass>
 
 #define NLOHMANN_BASIC_JSON_TPL                                            \
     basic_json<ObjectType, ArrayType, StringType, BooleanType,             \
     NumberIntegerType, NumberUnsignedType, NumberFloatType,                \
-    AllocatorType, JSONSerializer, BinaryType>
+    AllocatorType, JSONSerializer, BinaryType, CustomBaseClass>
 
 // Macros to simplify conversion from/to types
 
@@ -3444,7 +3445,8 @@ template<template<typename U, typename V, typename... Args> class ObjectType =
          template<typename U> class AllocatorType = std::allocator,
          template<typename T, typename SFINAE = void> class JSONSerializer =
          adl_serializer,
-         class BinaryType = std::vector<std::uint8_t>>
+         class BinaryType = std::vector<std::uint8_t>,
+         class CustomBaseClass = void>
 class basic_json;
 
 /*!
@@ -12448,6 +12450,28 @@ class json_reverse_iterator : public std::reverse_iterator<Base>
 
 // #include <nlohmann/detail/iterators/primitive_iterator.hpp>
 
+// #include <nlohmann/detail/json_custom_base_class.hpp>
+
+
+#include <type_traits>
+
+namespace nlohmann
+{
+namespace detail
+{
+
+struct json_default_base {};
+
+template<class T>
+using json_base_class = typename std::conditional<
+        std::is_same<T, void>::value,
+        json_default_base,
+        T
+    >::type;
+
+}  // namespace detail
+}  // namespace nlohmann
+
 // #include <nlohmann/detail/json_pointer.hpp>
 
 
@@ -17675,6 +17699,7 @@ Format](https://tools.ietf.org/html/rfc8259)
 */
 NLOHMANN_BASIC_JSON_TPL_DECLARATION
 class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-special-member-functions)
+    : public ::nlohmann::detail::json_base_class<CustomBaseClass>
 {
   private:
     template<detail::value_t> friend struct detail::external_constructor;
@@ -17697,6 +17722,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
 
     /// workaround type for MSVC
     using basic_json_t = NLOHMANN_BASIC_JSON_TPL;
+    using json_base_class_t = ::nlohmann::detail::json_base_class<CustomBaseClass>;
 
   JSON_PRIVATE_UNLESS_TESTED:
     // convenience aliases for types residing in namespace detail;
@@ -17708,7 +17734,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
         detail::parser_callback_t<basic_json>cb = nullptr,
         const bool allow_exceptions = true,
         const bool ignore_comments = false
-                                 )
+    )
     {
         return ::nlohmann::detail::parser<basic_json, InputAdapterType>(std::move(adapter),
                 std::move(cb), allow_exceptions, ignore_comments);
@@ -19659,7 +19685,8 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     @since version 1.0.0
     */
     basic_json(const basic_json& other)
-        : m_type(other.m_type)
+        : json_base_class_t(other),
+          m_type(other.m_type)
     {
         // check of passed value is valid
         other.assert_invariant();
@@ -19751,7 +19778,8 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     @since version 1.0.0
     */
     basic_json(basic_json&& other) noexcept
-        : m_type(std::move(other.m_type)),
+        : json_base_class_t(std::move(other)),
+          m_type(std::move(other.m_type)),
           m_value(std::move(other.m_value))
     {
         // check that passed value is valid
@@ -19792,7 +19820,8 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
         std::is_nothrow_move_constructible<value_t>::value&&
         std::is_nothrow_move_assignable<value_t>::value&&
         std::is_nothrow_move_constructible<json_value>::value&&
-        std::is_nothrow_move_assignable<json_value>::value
+        std::is_nothrow_move_assignable<json_value>::value&&
+        std::is_nothrow_move_assignable<json_base_class_t>::value
     )
     {
         // check that passed value is valid
@@ -19801,6 +19830,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
         using std::swap;
         swap(m_type, other.m_type);
         swap(m_value, other.m_value);
+        json_base_class_t::operator=(std::move(other));
 
         set_parents();
         assert_invariant();
