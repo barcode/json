@@ -152,7 +152,7 @@ class parser
     JSON_HEDLEY_NON_NULL(2)
     bool sax_parse(SAX* sax, const bool strict = true)
     {
-        (void)detail::is_sax_static_asserts<SAX, BasicJsonType> {};
+        (void)detail::is_sax_static_asserts<SAX, BasicJsonType, lexer_t> {};
         const bool result = sax_parse_internal(sax);
 
         // strict mode: next byte must be EOF
@@ -283,7 +283,8 @@ class parser
 
                     case token_type::literal_null:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->null()))
+                        using call_t =  detail::sax_call_null_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer)))
                         {
                             return false;
                         }

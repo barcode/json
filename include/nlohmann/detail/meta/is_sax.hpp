@@ -11,8 +11,72 @@ namespace nlohmann
 {
 namespace detail
 {
-template<typename T>
-using null_function_t = decltype(std::declval<T&>().null());
+template<typename SAX, typename LexerType = void>
+struct sax_call_null_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().null());
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().null(std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().null(*std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_null_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t pos)
+    {
+        return sax->null(pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_null_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t pos)
+    {
+        return sax->null();
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_null_function<SaxT, LexT>::no_lexer &&
+    sax_call_null_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, const LexT& lex)
+    {
+        return sax->null(lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_null_function<SaxT, LexT>::no_lexer &&
+    !sax_call_null_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, const LexT& lex)
+    {
+        return call(sax, lex.get_position().chars_read_total);
+    }
+};
 
 template<typename T>
 using boolean_function_t =
@@ -61,7 +125,7 @@ using parse_error_function_t = decltype(std::declval<T&>().parse_error(
         std::declval<std::size_t>(), std::declval<const std::string&>(),
         std::declval<const Exception&>()));
 
-template<typename SAX, typename BasicJsonType>
+template<typename SAX, typename BasicJsonType, typename LexerType = void>
 struct is_sax
 {
   private:
@@ -77,7 +141,7 @@ struct is_sax
 
   public:
     static constexpr bool value =
-        is_detected_exact<bool, null_function_t, SAX>::value &&
+        sax_call_null_function<SAX, LexerType>::valid &&
         is_detected_exact<bool, boolean_function_t, SAX>::value &&
         is_detected_exact<bool, number_integer_function_t, SAX, number_integer_t>::value &&
         is_detected_exact<bool, number_unsigned_function_t, SAX, number_unsigned_t>::value &&
@@ -92,7 +156,7 @@ struct is_sax
         is_detected_exact<bool, parse_error_function_t, SAX, exception_t>::value;
 };
 
-template<typename SAX, typename BasicJsonType>
+template<typename SAX, typename BasicJsonType, typename LexerType = void>
 struct is_sax_static_asserts
 {
   private:
@@ -107,7 +171,7 @@ struct is_sax_static_asserts
     using exception_t = typename BasicJsonType::exception;
 
   public:
-    static_assert(is_detected_exact<bool, null_function_t, SAX>::value,
+    static_assert(sax_call_null_function<SAX, LexerType>::valid,
                   "Missing/invalid function: bool null()");
     static_assert(is_detected_exact<bool, boolean_function_t, SAX>::value,
                   "Missing/invalid function: bool boolean(bool)");

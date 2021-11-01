@@ -300,7 +300,7 @@ class binary_reader
 
             case 0x0A: // null
             {
-                return sax->null();
+                return detail::sax_call_null_function<SAX>::call(sax, element_type_parse_position);
             }
 
             case 0x10: // int32
@@ -811,7 +811,7 @@ class binary_reader
                 return sax->boolean(true);
 
             case 0xF6: // null
-                return sax->null();
+                return detail::sax_call_null_function<SAX>::call(sax, chars_read);
 
             case 0xF9: // Half-Precision Float (two-byte IEEE 754)
             {
@@ -1394,7 +1394,7 @@ class binary_reader
             }
 
             case 0xC0: // nil
-                return sax->null();
+                return detail::sax_call_null_function<SAX>::call(sax, chars_read);
 
             case 0xC2: // false
                 return sax->boolean(false);
@@ -2011,7 +2011,7 @@ class binary_reader
                 return sax->boolean(false);
 
             case 'Z':  // null
-                return sax->null();
+                return detail::sax_call_null_function<SAX>::call(sax, chars_read);
 
             case 'U':
             {

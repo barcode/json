@@ -8270,8 +8270,72 @@ namespace nlohmann
 {
 namespace detail
 {
-template<typename T>
-using null_function_t = decltype(std::declval<T&>().null());
+template<typename SAX, typename LexerType = void>
+struct sax_call_null_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().null());
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().null(std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().null(*std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_null_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t pos)
+    {
+        return sax->null(pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_null_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t pos)
+    {
+        return sax->null();
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_null_function<SaxT, LexT>::no_lexer &&
+    sax_call_null_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, const LexT& lex)
+    {
+        return sax->null(lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_null_function<SaxT, LexT>::no_lexer &&
+    !sax_call_null_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, const LexT& lex)
+    {
+        return call(sax, lex.get_position().chars_read_total);
+    }
+};
 
 template<typename T>
 using boolean_function_t =
@@ -8320,7 +8384,7 @@ using parse_error_function_t = decltype(std::declval<T&>().parse_error(
         std::declval<std::size_t>(), std::declval<const std::string&>(),
         std::declval<const Exception&>()));
 
-template<typename SAX, typename BasicJsonType>
+template<typename SAX, typename BasicJsonType, typename LexerType = void>
 struct is_sax
 {
   private:
@@ -8336,7 +8400,7 @@ struct is_sax
 
   public:
     static constexpr bool value =
-        is_detected_exact<bool, null_function_t, SAX>::value &&
+        sax_call_null_function<SAX, LexerType>::valid &&
         is_detected_exact<bool, boolean_function_t, SAX>::value &&
         is_detected_exact<bool, number_integer_function_t, SAX, number_integer_t>::value &&
         is_detected_exact<bool, number_unsigned_function_t, SAX, number_unsigned_t>::value &&
@@ -8351,7 +8415,7 @@ struct is_sax
         is_detected_exact<bool, parse_error_function_t, SAX, exception_t>::value;
 };
 
-template<typename SAX, typename BasicJsonType>
+template<typename SAX, typename BasicJsonType, typename LexerType = void>
 struct is_sax_static_asserts
 {
   private:
@@ -8366,7 +8430,7 @@ struct is_sax_static_asserts
     using exception_t = typename BasicJsonType::exception;
 
   public:
-    static_assert(is_detected_exact<bool, null_function_t, SAX>::value,
+    static_assert(sax_call_null_function<SAX, LexerType>::valid,
                   "Missing/invalid function: bool null()");
     static_assert(is_detected_exact<bool, boolean_function_t, SAX>::value,
                   "Missing/invalid function: bool boolean(bool)");
@@ -8690,7 +8754,7 @@ class binary_reader
 
             case 0x0A: // null
             {
-                return sax->null();
+                return detail::sax_call_null_function<SAX>::call(sax, element_type_parse_position);
             }
 
             case 0x10: // int32
@@ -9201,7 +9265,7 @@ class binary_reader
                 return sax->boolean(true);
 
             case 0xF6: // null
-                return sax->null();
+                return detail::sax_call_null_function<SAX>::call(sax, chars_read);
 
             case 0xF9: // Half-Precision Float (two-byte IEEE 754)
             {
@@ -9784,7 +9848,7 @@ class binary_reader
             }
 
             case 0xC0: // nil
-                return sax->null();
+                return detail::sax_call_null_function<SAX>::call(sax, chars_read);
 
             case 0xC2: // false
                 return sax->boolean(false);
@@ -10401,7 +10465,7 @@ class binary_reader
                 return sax->boolean(false);
 
             case 'Z':  // null
-                return sax->null();
+                return detail::sax_call_null_function<SAX>::call(sax, chars_read);
 
             case 'U':
             {
@@ -11079,7 +11143,7 @@ class parser
     JSON_HEDLEY_NON_NULL(2)
     bool sax_parse(SAX* sax, const bool strict = true)
     {
-        (void)detail::is_sax_static_asserts<SAX, BasicJsonType> {};
+        (void)detail::is_sax_static_asserts<SAX, BasicJsonType, lexer_t> {};
         const bool result = sax_parse_internal(sax);
 
         // strict mode: next byte must be EOF
@@ -11210,7 +11274,8 @@ class parser
 
                     case token_type::literal_null:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->null()))
+                        using call_t =  detail::sax_call_null_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer)))
                         {
                             return false;
                         }
