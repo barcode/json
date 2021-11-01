@@ -8337,47 +8337,742 @@ struct sax_call_null_function
     }
 };
 
-template<typename T>
-using boolean_function_t =
-    decltype(std::declval<T&>().boolean(std::declval<bool>()));
+template<typename SAX, typename LexerType = void>
+struct sax_call_boolean_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
 
-template<typename T, typename Integer>
-using number_integer_function_t =
-    decltype(std::declval<T&>().number_integer(std::declval<Integer>()));
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().boolean(std::declval<bool>()));
 
-template<typename T, typename Unsigned>
-using number_unsigned_function_t =
-    decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>()));
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().boolean(std::declval<bool>(), std::declval<std::size_t>()));
 
-template<typename T, typename Float, typename String>
-using number_float_function_t = decltype(std::declval<T&>().number_float(
-                                    std::declval<Float>(), std::declval<const String&>()));
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().boolean(std::declval<bool>(), *std::declval<const LexerType*>()));
 
-template<typename T, typename String>
-using string_function_t =
-    decltype(std::declval<T&>().string(std::declval<String&>()));
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
 
-template<typename T, typename Binary>
-using binary_function_t =
-    decltype(std::declval<T&>().binary(std::declval<Binary&>()));
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
 
-template<typename T>
-using start_object_function_t =
-    decltype(std::declval<T&>().start_object(std::declval<std::size_t>()));
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
 
-template<typename T, typename String>
-using key_function_t =
-    decltype(std::declval<T&>().key(std::declval<String&>()));
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
 
-template<typename T>
-using end_object_function_t = decltype(std::declval<T&>().end_object());
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_boolean_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, bool val, std::size_t pos)
+    {
+        return sax->boolean(val, pos);
+    }
 
-template<typename T>
-using start_array_function_t =
-    decltype(std::declval<T&>().start_array(std::declval<std::size_t>()));
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_boolean_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, bool val, std::size_t pos)
+    {
+        return sax->boolean(val);
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_boolean_function<SaxT, LexT>::no_lexer &&
+    sax_call_boolean_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, bool val, const LexT& lex)
+    {
+        return sax->boolean(val, lex);
+    }
 
-template<typename T>
-using end_array_function_t = decltype(std::declval<T&>().end_array());
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_boolean_function<SaxT, LexT>::no_lexer &&
+    !sax_call_boolean_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, bool val, const LexT& lex)
+    {
+        return call(sax, val, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename Integer, typename LexerType = void>
+struct sax_call_number_integer_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>()));
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>(), std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>(), *std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_number_integer_function<SaxT, Integer, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, Integer val, std::size_t pos)
+    {
+        return sax->number_integer(val, pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_number_integer_function<SaxT, Integer, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, Integer val, std::size_t pos)
+    {
+        return sax->number_integer(val);
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_number_integer_function<SaxT, Integer, LexT>::no_lexer &&
+    sax_call_number_integer_function<SaxT, Integer, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, Integer val, const LexT& lex)
+    {
+        return sax->number_integer(val, lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_number_integer_function<SaxT, Integer, LexT>::no_lexer &&
+    !sax_call_number_integer_function<SaxT, Integer, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, Integer val, const LexT& lex)
+    {
+        return call(sax, val, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename Unsigned, typename LexerType = void>
+struct sax_call_number_unsigned_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>()));
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>(), std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>(), *std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_number_unsigned_function<SaxT, Unsigned, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, Unsigned val, std::size_t pos)
+    {
+        return sax->number_unsigned(val, pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_number_unsigned_function<SaxT, Unsigned, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, Unsigned val, std::size_t pos)
+    {
+        return sax->number_unsigned(val);
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_number_unsigned_function<SaxT, Unsigned, LexT>::no_lexer &&
+    sax_call_number_unsigned_function<SaxT, Unsigned, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, Unsigned val, const LexT& lex)
+    {
+        return sax->number_unsigned(val, lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_number_unsigned_function<SaxT, Unsigned, LexT>::no_lexer &&
+    !sax_call_number_unsigned_function<SaxT, Unsigned, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, Unsigned val, const LexT& lex)
+    {
+        return call(sax, val, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename Float, typename String, typename LexerType = void>
+struct sax_call_number_float_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<const String&>()));
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<const String&>(), std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<const String&>(), *std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_number_float_function<SaxT, Float, String, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, Float val, const String& str, std::size_t pos)
+    {
+        return sax->number_float(val, str, pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_number_float_function<SaxT, Float, String, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, Float val, const String& str, std::size_t pos)
+    {
+        return sax->number_float(val, str);
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_number_float_function<SaxT, Float, String, LexT>::no_lexer &&
+    sax_call_number_float_function<SaxT, Float, String, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, Float val, const String& str, const LexT& lex)
+    {
+        return sax->number_float(val, str, lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_number_float_function<SaxT, Float, String, LexT>::no_lexer &&
+    !sax_call_number_float_function<SaxT, Float, String, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, Float val, const String& str, const LexT& lex)
+    {
+        return call(sax, val, str, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename String, typename LexerType = void>
+struct sax_call_string_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().string(std::declval<String&>()));
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().string(std::declval<String&>(), std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().string(std::declval<String&>(), *std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_string_function<SaxT, String, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, String& val, std::size_t pos)
+    {
+        return sax->string(val, pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_string_function<SaxT, String, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, String& val, std::size_t pos)
+    {
+        return sax->string(val);
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_string_function<SaxT, String, LexT>::no_lexer &&
+    sax_call_string_function<SaxT, String, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, String& val, const LexT& lex)
+    {
+        return sax->string(val, lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_string_function<SaxT, String, LexT>::no_lexer &&
+    !sax_call_string_function<SaxT, String, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, String& val, const LexT& lex)
+    {
+        return call(sax, val, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename Binary, typename LexerType = void>
+struct sax_call_binary_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().binary(std::declval<Binary&>()));
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().binary(std::declval<Binary&>(), std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().binary(std::declval<Binary&>(), *std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_binary_function<SaxT, Binary, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, Binary& val, std::size_t pos)
+    {
+        return sax->binary(val, pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_binary_function<SaxT, Binary, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, Binary& val, std::size_t pos)
+    {
+        return sax->binary(val);
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_binary_function<SaxT, Binary, LexT>::no_lexer &&
+    sax_call_binary_function<SaxT, Binary, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, Binary& val, const LexT& lex)
+    {
+        return sax->binary(val, lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_binary_function<SaxT, Binary, LexT>::no_lexer &&
+    !sax_call_binary_function<SaxT, Binary, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, Binary& val, const LexT& lex)
+    {
+        return call(sax, val, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename LexerType = void>
+struct sax_call_start_object_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>(), std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>(), *std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_start_object_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t len, std::size_t pos)
+    {
+        return sax->start_object(len, pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_start_object_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t len, std::size_t pos)
+    {
+        return sax->start_object(len);
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_start_object_function<SaxT, LexT>::no_lexer &&
+    sax_call_start_object_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, std::size_t len, const LexT& lex)
+    {
+        return sax->start_object(len, lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_start_object_function<SaxT, LexT>::no_lexer &&
+    !sax_call_start_object_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, std::size_t len, const LexT& lex)
+    {
+        return call(sax, len, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename String, typename LexerType = void>
+struct sax_call_key_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().key(std::declval<String&>()));
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().key(std::declval<String&>(), std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().key(std::declval<String&>(), *std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_key_function<SaxT, String, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, String& val, std::size_t pos)
+    {
+        return sax->key(val, pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_key_function<SaxT, String, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, String& val, std::size_t pos)
+    {
+        return sax->key(val);
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_key_function<SaxT, String, LexT>::no_lexer &&
+    sax_call_key_function<SaxT, String, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, String& val, const LexT& lex)
+    {
+        return sax->key(val, lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_key_function<SaxT, String, LexT>::no_lexer &&
+    !sax_call_key_function<SaxT, String, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, String& val, const LexT& lex)
+    {
+        return call(sax, val, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename LexerType = void>
+struct sax_call_end_object_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().end_object());
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().end_object(std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().end_object(*std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_end_object_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t pos)
+    {
+        return sax->end_object(pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_end_object_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t pos)
+    {
+        return sax->end_object();
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_end_object_function<SaxT, LexT>::no_lexer &&
+    sax_call_end_object_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, const LexT& lex)
+    {
+        return sax->end_object(lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_end_object_function<SaxT, LexT>::no_lexer &&
+    !sax_call_end_object_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, const LexT& lex)
+    {
+        return call(sax, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename LexerType = void>
+struct sax_call_start_array_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>(), std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>(), *std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_start_array_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t len, std::size_t pos)
+    {
+        return sax->start_array(len, pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_start_array_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t len, std::size_t pos)
+    {
+        return sax->start_array(len);
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_start_array_function<SaxT, LexT>::no_lexer &&
+    sax_call_start_array_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, std::size_t len, const LexT& lex)
+    {
+        return sax->start_array(len, lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_start_array_function<SaxT, LexT>::no_lexer &&
+    !sax_call_start_array_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, std::size_t len, const LexT& lex)
+    {
+        return call(sax, len, lex.get_position().chars_read_total);
+    }
+};
+
+template<typename SAX, typename LexerType = void>
+struct sax_call_end_array_function
+{
+    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+
+    template<typename T>
+    using call_base_t = decltype(std::declval<T&>().end_array());
+
+    template<typename T>
+    using call_with_pos_t = decltype(std::declval<T&>().end_array(std::declval<std::size_t>()));
+
+    template<typename T>
+    using call_with_lex_t = decltype(std::declval<T&>().end_array(*std::declval<const LexerType*>()));
+
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    sax_call_end_array_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t pos)
+    {
+        return sax->end_array(pos);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_end_array_function<SaxT, LexT>::detected_call_with_pos
+    , bool >::type
+    call(SaxT* sax, std::size_t pos)
+    {
+        return sax->end_array();
+    }
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_end_array_function<SaxT, LexT>::no_lexer &&
+    sax_call_end_array_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, const LexT& lex)
+    {
+        return sax->end_array(lex);
+    }
+
+    template<typename SaxT = SAX, typename LexT = LexerType>
+    static typename std::enable_if <
+    !sax_call_end_array_function<SaxT, LexT>::no_lexer &&
+    !sax_call_end_array_function<SaxT, LexT>::detected_call_with_lex
+    , bool >::type
+    call(SaxT* sax, const LexT& lex)
+    {
+        return call(sax, lex.get_position().chars_read_total);
+    }
+};
 
 template<typename T, typename Exception>
 using parse_error_function_t = decltype(std::declval<T&>().parse_error(
@@ -8401,17 +9096,17 @@ struct is_sax
   public:
     static constexpr bool value =
         sax_call_null_function<SAX, LexerType>::valid &&
-        is_detected_exact<bool, boolean_function_t, SAX>::value &&
-        is_detected_exact<bool, number_integer_function_t, SAX, number_integer_t>::value &&
-        is_detected_exact<bool, number_unsigned_function_t, SAX, number_unsigned_t>::value &&
-        is_detected_exact<bool, number_float_function_t, SAX, number_float_t, string_t>::value &&
-        is_detected_exact<bool, string_function_t, SAX, string_t>::value &&
-        is_detected_exact<bool, binary_function_t, SAX, binary_t>::value &&
-        is_detected_exact<bool, start_object_function_t, SAX>::value &&
-        is_detected_exact<bool, key_function_t, SAX, string_t>::value &&
-        is_detected_exact<bool, end_object_function_t, SAX>::value &&
-        is_detected_exact<bool, start_array_function_t, SAX>::value &&
-        is_detected_exact<bool, end_array_function_t, SAX>::value &&
+        sax_call_boolean_function<SAX, LexerType>::valid &&
+        sax_call_number_integer_function<SAX, number_integer_t, LexerType>::valid &&
+        sax_call_number_unsigned_function<SAX, number_unsigned_t, LexerType>::valid &&
+        sax_call_number_float_function<SAX, number_float_t, string_t, LexerType>::valid &&
+        sax_call_string_function<SAX, string_t, LexerType>::valid &&
+        sax_call_binary_function<SAX, binary_t, LexerType>::valid &&
+        sax_call_start_object_function<SAX, LexerType>::valid &&
+        sax_call_key_function<SAX, string_t, LexerType>::valid &&
+        sax_call_end_object_function<SAX, LexerType>::valid &&
+        sax_call_start_array_function<SAX, LexerType>::valid &&
+        sax_call_end_array_function<SAX, LexerType>::valid &&
         is_detected_exact<bool, parse_error_function_t, SAX, exception_t>::value;
 };
 
@@ -8431,38 +9126,70 @@ struct is_sax_static_asserts
 
   public:
     static_assert(sax_call_null_function<SAX, LexerType>::valid,
-                  "Missing/invalid function: bool null()");
-    static_assert(is_detected_exact<bool, boolean_function_t, SAX>::value,
-                  "Missing/invalid function: bool boolean(bool)");
-    static_assert(is_detected_exact<bool, boolean_function_t, SAX>::value,
-                  "Missing/invalid function: bool boolean(bool)");
+                  "Missing/invalid function: "
+                  "'bool null()' or "
+                  "'bool null(std::size_t)' or "
+                  "'bool null(lexer_t)'");
+    static_assert(sax_call_boolean_function<SAX, LexerType>::valid,
+                  "Missing/invalid function: "
+                  "'bool boolean(bool)' or "
+                  "'bool boolean(bool, std::size_t)' or "
+                  "'bool boolean(bool, lexer_t)'");
     static_assert(
-        is_detected_exact<bool, number_integer_function_t, SAX,
-        number_integer_t>::value,
-        "Missing/invalid function: bool number_integer(number_integer_t)");
+        sax_call_number_integer_function<SAX, number_integer_t, LexerType>::valid,
+        "Missing/invalid function: "
+        "'bool number_integer(number_integer_t)' or "
+        "'bool number_integer(number_integer_t, std::size_t)' or "
+        "'bool number_integer(number_integer_t, lexer_t)'");
     static_assert(
-        is_detected_exact<bool, number_unsigned_function_t, SAX,
-        number_unsigned_t>::value,
-        "Missing/invalid function: bool number_unsigned(number_unsigned_t)");
-    static_assert(is_detected_exact<bool, number_float_function_t, SAX,
-                  number_float_t, string_t>::value,
-                  "Missing/invalid function: bool number_float(number_float_t, const string_t&)");
+        sax_call_number_unsigned_function<SAX, number_unsigned_t, LexerType>::valid,
+        "Missing/invalid function: "
+        "'bool number_unsigned(number_unsigned_t)' or "
+        "'bool number_unsigned(number_unsigned_t, std::size_t)' or "
+        "'bool number_unsigned(number_unsigned_t, lexer_t)'");
     static_assert(
-        is_detected_exact<bool, string_function_t, SAX, string_t>::value,
-        "Missing/invalid function: bool string(string_t&)");
+        sax_call_number_float_function<SAX, number_float_t, string_t, LexerType>::valid,
+        "Missing/invalid function:)"
+        "'bool number_float(number_float_t, const string_t&)' or "
+        "'bool number_float(number_float_t, const string_t&, std::size_t)' or "
+        "'bool number_float(number_float_t, const string_t&, lexer_t)'");
     static_assert(
-        is_detected_exact<bool, binary_function_t, SAX, binary_t>::value,
-        "Missing/invalid function: bool binary(binary_t&)");
-    static_assert(is_detected_exact<bool, start_object_function_t, SAX>::value,
-                  "Missing/invalid function: bool start_object(std::size_t)");
-    static_assert(is_detected_exact<bool, key_function_t, SAX, string_t>::value,
-                  "Missing/invalid function: bool key(string_t&)");
-    static_assert(is_detected_exact<bool, end_object_function_t, SAX>::value,
-                  "Missing/invalid function: bool end_object()");
-    static_assert(is_detected_exact<bool, start_array_function_t, SAX>::value,
-                  "Missing/invalid function: bool start_array(std::size_t)");
-    static_assert(is_detected_exact<bool, end_array_function_t, SAX>::value,
-                  "Missing/invalid function: bool end_array()");
+        sax_call_string_function<SAX, string_t, LexerType>::valid,
+        "Missing/invalid function: "
+        "'bool string(string_t&)' or "
+        "'bool string(string_t&, std::size_t)' or "
+        "'bool string(string_t&, lexer_t)'");
+    static_assert(
+        sax_call_binary_function<SAX, binary_t, LexerType>::valid,
+        "Missing/invalid function: "
+        "'bool binary(binary_t&)' or "
+        "'bool binary(binary_t&, std::size_t)' or "
+        "'bool binary(binary_t&, lexer_t)'");
+    static_assert(sax_call_start_object_function<SAX, LexerType>::valid,
+                  "Missing/invalid function: "
+                  "'bool start_object(std::size_t)' or "
+                  "'bool start_object(std::size_t, std::size_t)' or "
+                  "'bool start_object(std::size_t, lexer_t)'");
+    static_assert(sax_call_key_function<SAX, string_t, LexerType>::valid,
+                  "Missing/invalid function: "
+                  "'bool key(string_t&)' or "
+                  "'bool key(string_t&, std::size_t)' or "
+                  "'bool key(string_t&, lexer_t)'");
+    static_assert(sax_call_end_object_function<SAX, LexerType>::valid,
+                  "Missing/invalid function: "
+                  "'bool end_object()' or "
+                  "'bool end_object(std::size_t)' or "
+                  "'bool end_object(lexer_t)'");
+    static_assert(sax_call_start_array_function<SAX, LexerType>::valid,
+                  "Missing/invalid function: "
+                  "'bool start_array(std::size_t)' or "
+                  "'bool start_array(std::size_t, std::size_t)' or "
+                  "'bool start_array(std::size_t, lexer_t)'");
+    static_assert(sax_call_end_array_function<SAX, LexerType>::valid,
+                  "Missing/invalid function: bool end_array()"
+                  "'bool bool end_array()' or "
+                  "'bool bool end_array(std::size_t)' or "
+                  "'bool bool end_array(lexer_t)'");
     static_assert(
         is_detected_exact<bool, parse_error_function_t, SAX, exception_t>::value,
         "Missing/invalid function: bool parse_error(std::size_t, const "
@@ -8615,7 +9342,8 @@ class binary_reader
         std::int32_t document_size{};
         get_number<std::int32_t, true>(input_format_t::bson, document_size);
 
-        if (JSON_HEDLEY_UNLIKELY(!sax->start_object(std::size_t(-1))))
+        using call_start_obj_t = detail::sax_call_start_object_function<SAX>;
+        if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, std::size_t(-1), chars_read)))
         {
             return false;
         }
@@ -8625,7 +9353,8 @@ class binary_reader
             return false;
         }
 
-        return sax->end_object();
+        using call_end_obj_t = detail::sax_call_end_object_function<SAX>;
+        return call_end_obj_t::call(sax, chars_read);
     }
 
     /*!
@@ -8720,14 +9449,18 @@ class binary_reader
             case 0x01: // double
             {
                 double number{};
-                return get_number<double, true>(input_format_t::bson, number) && sax->number_float(static_cast<number_float_t>(number), "");
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                return get_number<double, true>(input_format_t::bson, number) &&
+                       call_t::call(sax, static_cast<number_float_t>(number), "", element_type_parse_position);
             }
 
             case 0x02: // string
             {
                 std::int32_t len{};
                 string_t value;
-                return get_number<std::int32_t, true>(input_format_t::bson, len) && get_bson_string(len, value) && sax->string(value);
+                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                return get_number<std::int32_t, true>(input_format_t::bson, len) && get_bson_string(len, value) &&
+                       call_t::call(sax, value, element_type_parse_position);
             }
 
             case 0x03: // object
@@ -8744,12 +9477,14 @@ class binary_reader
             {
                 std::int32_t len{};
                 binary_t value;
-                return get_number<std::int32_t, true>(input_format_t::bson, len) && get_bson_binary(len, value) && sax->binary(value);
+                using call_t = detail::sax_call_binary_function<SAX, binary_t>;
+                return get_number<std::int32_t, true>(input_format_t::bson, len) && get_bson_binary(len, value) &&
+                       call_t::call(sax, value, element_type_parse_position);
             }
 
             case 0x08: // boolean
             {
-                return sax->boolean(get() != 0);
+                return detail::sax_call_boolean_function<SAX, void>::call(sax, get() != 0, element_type_parse_position);
             }
 
             case 0x0A: // null
@@ -8760,13 +9495,15 @@ class binary_reader
             case 0x10: // int32
             {
                 std::int32_t value{};
-                return get_number<std::int32_t, true>(input_format_t::bson, value) && sax->number_integer(value);
+                return get_number<std::int32_t, true>(input_format_t::bson, value) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, value, element_type_parse_position);
             }
 
             case 0x12: // int64
             {
                 std::int64_t value{};
-                return get_number<std::int64_t, true>(input_format_t::bson, value) && sax->number_integer(value);
+                return get_number<std::int64_t, true>(input_format_t::bson, value) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, value, element_type_parse_position);
             }
 
             default: // anything else not supported (yet)
@@ -8807,7 +9544,8 @@ class binary_reader
                 return false;
             }
 
-            if (!is_array && !sax->key(key))
+            using call_t = detail::sax_call_key_function<SAX, string_t>;
+            if (!is_array && !call_t::call(sax, key, chars_read))
             {
                 return false;
             }
@@ -8833,7 +9571,8 @@ class binary_reader
         std::int32_t document_size{};
         get_number<std::int32_t, true>(input_format_t::bson, document_size);
 
-        if (JSON_HEDLEY_UNLIKELY(!sax->start_array(std::size_t(-1))))
+        using call_start_ar_t = detail::sax_call_start_array_function<SAX>;
+        if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, std::size_t(-1), chars_read)))
         {
             return false;
         }
@@ -8843,7 +9582,8 @@ class binary_reader
             return false;
         }
 
-        return sax->end_array();
+        using call_end_ar_t = detail::sax_call_end_array_function<SAX>;
+        return call_end_ar_t::call(sax, chars_read);
     }
 
     //////////
@@ -8892,30 +9632,37 @@ class binary_reader
             case 0x15:
             case 0x16:
             case 0x17:
-                return sax->number_unsigned(static_cast<number_unsigned_t>(current));
+            {
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
+                return call_t::call(sax, static_cast<number_unsigned_t>(current), chars_read);
+            }
 
             case 0x18: // Unsigned integer (one-byte uint8_t follows)
             {
                 std::uint8_t number{};
-                return get_number(input_format_t::cbor, number) && sax->number_unsigned(number);
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
+                return get_number(input_format_t::cbor, number) && call_t::call(sax, number, chars_read);
             }
 
             case 0x19: // Unsigned integer (two-byte uint16_t follows)
             {
                 std::uint16_t number{};
-                return get_number(input_format_t::cbor, number) && sax->number_unsigned(number);
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
+                return get_number(input_format_t::cbor, number) && call_t::call(sax, number, chars_read);
             }
 
             case 0x1A: // Unsigned integer (four-byte uint32_t follows)
             {
                 std::uint32_t number{};
-                return get_number(input_format_t::cbor, number) && sax->number_unsigned(number);
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
+                return get_number(input_format_t::cbor, number) && call_t::call(sax, number, chars_read);
             }
 
             case 0x1B: // Unsigned integer (eight-byte uint64_t follows)
             {
                 std::uint64_t number{};
-                return get_number(input_format_t::cbor, number) && sax->number_unsigned(number);
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
+                return get_number(input_format_t::cbor, number) && call_t::call(sax, number, chars_read);
             }
 
             // Negative integer -1-0x00..-1-0x17 (-1..-24)
@@ -8943,31 +9690,34 @@ class binary_reader
             case 0x35:
             case 0x36:
             case 0x37:
-                return sax->number_integer(static_cast<std::int8_t>(0x20 - 1 - current));
+                return detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, static_cast<std::int8_t>(0x20 - 1 - current), chars_read);
 
             case 0x38: // Negative integer (one-byte uint8_t follows)
             {
                 std::uint8_t number{};
-                return get_number(input_format_t::cbor, number) && sax->number_integer(static_cast<number_integer_t>(-1) - number);
+                return get_number(input_format_t::cbor, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
             }
 
             case 0x39: // Negative integer -1-n (two-byte uint16_t follows)
             {
                 std::uint16_t number{};
-                return get_number(input_format_t::cbor, number) && sax->number_integer(static_cast<number_integer_t>(-1) - number);
+                return get_number(input_format_t::cbor, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
             }
 
             case 0x3A: // Negative integer -1-n (four-byte uint32_t follows)
             {
                 std::uint32_t number{};
-                return get_number(input_format_t::cbor, number) && sax->number_integer(static_cast<number_integer_t>(-1) - number);
+                return get_number(input_format_t::cbor, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
             }
 
             case 0x3B: // Negative integer -1-n (eight-byte uint64_t follows)
             {
                 std::uint64_t number{};
-                return get_number(input_format_t::cbor, number) && sax->number_integer(static_cast<number_integer_t>(-1)
-                        - static_cast<number_integer_t>(number));
+                return get_number(input_format_t::cbor, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
             }
 
             // Binary data (0x00..0x17 bytes follow)
@@ -9002,7 +9752,8 @@ class binary_reader
             case 0x5F: // Binary data (indefinite length)
             {
                 binary_t b;
-                return get_cbor_binary(b) && sax->binary(b);
+                using call_t = detail::sax_call_binary_function<SAX, binary_t>;
+                return get_cbor_binary(b) && call_t::call(sax, b, chars_read);
             }
 
             // UTF-8 string (0x00..0x17 bytes follow)
@@ -9037,7 +9788,8 @@ class binary_reader
             case 0x7F: // UTF-8 string (indefinite length)
             {
                 string_t s;
-                return get_cbor_string(s) && sax->string(s);
+                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                return get_cbor_string(s) && call_t::call(sax, s, chars_read);
             }
 
             // array (0x00..0x17 data items follow)
@@ -9249,7 +10001,8 @@ class binary_reader
                                 return parse_cbor_internal(true, tag_handler);
                         }
                         get();
-                        return get_cbor_binary(b) && sax->binary(b);
+                        using call_t = detail::sax_call_binary_function<SAX, binary_t>;
+                        return get_cbor_binary(b) && call_t::call(sax, b, chars_read);
                     }
 
                     default:                 // LCOV_EXCL_LINE
@@ -9259,10 +10012,10 @@ class binary_reader
             }
 
             case 0xF4: // false
-                return sax->boolean(false);
+                return detail::sax_call_boolean_function<SAX, void>::call(sax, false, chars_read);
 
             case 0xF5: // true
-                return sax->boolean(true);
+                return detail::sax_call_boolean_function<SAX, void>::call(sax, true, chars_read);
 
             case 0xF6: // null
                 return detail::sax_call_null_function<SAX>::call(sax, chars_read);
@@ -9310,21 +10063,30 @@ class binary_reader
                             return std::ldexp(mant + 1024, exp - 25);
                     }
                 }();
-                return sax->number_float((half & 0x8000u) != 0
-                                         ? static_cast<number_float_t>(-val)
-                                         : static_cast<number_float_t>(val), "");
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                return call_t::call(
+                           sax,
+                           (half & 0x8000u) != 0
+                           ? static_cast<number_float_t>(-val)
+                           : static_cast<number_float_t>(val),
+                           "",
+                           chars_read);
             }
 
             case 0xFA: // Single-Precision Float (four-byte IEEE 754)
             {
                 float number{};
-                return get_number(input_format_t::cbor, number) && sax->number_float(static_cast<number_float_t>(number), "");
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                return get_number(input_format_t::cbor, number) &&
+                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 0xFB: // Double-Precision Float (eight-byte IEEE 754)
             {
                 double number{};
-                return get_number(input_format_t::cbor, number) && sax->number_float(static_cast<number_float_t>(number), "");
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                return get_number(input_format_t::cbor, number) &&
+                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             default: // anything else (0xFF is handled inside the other types)
@@ -9538,7 +10300,8 @@ class binary_reader
     bool get_cbor_array(const std::size_t len,
                         const cbor_tag_handler_t tag_handler)
     {
-        if (JSON_HEDLEY_UNLIKELY(!sax->start_array(len)))
+        using call_start_ar_t = detail::sax_call_start_array_function<SAX>;
+        if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, len, chars_read)))
         {
             return false;
         }
@@ -9564,7 +10327,8 @@ class binary_reader
             }
         }
 
-        return sax->end_array();
+        using call_end_ar_t = detail::sax_call_end_array_function<SAX>;
+        return call_end_ar_t::call(sax, chars_read);
     }
 
     /*!
@@ -9576,7 +10340,8 @@ class binary_reader
     bool get_cbor_object(const std::size_t len,
                          const cbor_tag_handler_t tag_handler)
     {
-        if (JSON_HEDLEY_UNLIKELY(!sax->start_object(len)))
+        using call_start_obj_t = detail::sax_call_start_object_function<SAX>;
+        if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, len, chars_read)))
         {
             return false;
         }
@@ -9589,7 +10354,8 @@ class binary_reader
                 for (std::size_t i = 0; i < len; ++i)
                 {
                     get();
-                    if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !sax->key(key)))
+                    using call_t = detail::sax_call_key_function<SAX, string_t>;
+                    if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
                     }
@@ -9605,7 +10371,8 @@ class binary_reader
             {
                 while (get() != 0xFF)
                 {
-                    if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !sax->key(key)))
+                    using call_t = detail::sax_call_key_function<SAX, string_t>;
+                    if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
                     }
@@ -9619,7 +10386,8 @@ class binary_reader
             }
         }
 
-        return sax->end_object();
+        using call_end_obj_t = detail::sax_call_end_object_function<SAX>;
+        return call_end_obj_t::call(sax, chars_read);
     }
 
     /////////////
@@ -9766,7 +10534,10 @@ class binary_reader
             case 0x7D:
             case 0x7E:
             case 0x7F:
-                return sax->number_unsigned(static_cast<number_unsigned_t>(current));
+            {
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
+                return call_t::call(sax, static_cast<number_unsigned_t>(current), chars_read);
+            }
 
             // fixmap
             case 0x80:
@@ -9844,17 +10615,18 @@ class binary_reader
             case 0xDB: // str 32
             {
                 string_t s;
-                return get_msgpack_string(s) && sax->string(s);
+                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                return get_msgpack_string(s) && call_t::call(sax, s, chars_read);
             }
 
             case 0xC0: // nil
                 return detail::sax_call_null_function<SAX>::call(sax, chars_read);
 
             case 0xC2: // false
-                return sax->boolean(false);
+                return detail::sax_call_boolean_function<SAX, void>::call(sax, false, chars_read);
 
             case 0xC3: // true
-                return sax->boolean(true);
+                return detail::sax_call_boolean_function<SAX, void>::call(sax, true, chars_read);
 
             case 0xC4: // bin 8
             case 0xC5: // bin 16
@@ -9869,67 +10641,80 @@ class binary_reader
             case 0xD8: // fixext 16
             {
                 binary_t b;
-                return get_msgpack_binary(b) && sax->binary(b);
+                return get_msgpack_binary(b) &&
+                       detail::sax_call_binary_function<SAX, binary_t>::call(sax, b, chars_read);
             }
 
             case 0xCA: // float 32
             {
                 float number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_float(static_cast<number_float_t>(number), "");
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                return get_number(input_format_t::msgpack, number) &&
+                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 0xCB: // float 64
             {
                 double number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_float(static_cast<number_float_t>(number), "");
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                return get_number(input_format_t::msgpack, number) &&
+                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 0xCC: // uint 8
             {
                 std::uint8_t number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_unsigned(number);
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
+                return get_number(input_format_t::msgpack, number) && call_t::call(sax, number, chars_read);
             }
 
             case 0xCD: // uint 16
             {
                 std::uint16_t number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_unsigned(number);
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
+                return get_number(input_format_t::msgpack, number) && call_t::call(sax, number, chars_read);
             }
 
             case 0xCE: // uint 32
             {
                 std::uint32_t number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_unsigned(number);
+                return get_number(input_format_t::msgpack, number) &&
+                       detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>::call(sax, number, chars_read);
             }
 
             case 0xCF: // uint 64
             {
                 std::uint64_t number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_unsigned(number);
+                return get_number(input_format_t::msgpack, number) &&
+                       detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>::call(sax, number, chars_read);
             }
 
             case 0xD0: // int 8
             {
                 std::int8_t number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_integer(number);
+                return get_number(input_format_t::msgpack, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 0xD1: // int 16
             {
                 std::int16_t number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_integer(number);
+                return get_number(input_format_t::msgpack, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 0xD2: // int 32
             {
                 std::int32_t number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_integer(number);
+                return get_number(input_format_t::msgpack, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 0xD3: // int 64
             {
                 std::int64_t number{};
-                return get_number(input_format_t::msgpack, number) && sax->number_integer(number);
+                return get_number(input_format_t::msgpack, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 0xDC: // array 16
@@ -9989,7 +10774,7 @@ class binary_reader
             case 0xFD:
             case 0xFE:
             case 0xFF:
-                return sax->number_integer(static_cast<std::int8_t>(current));
+                return detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, static_cast<std::int8_t>(current), chars_read);
 
             default: // anything else
             {
@@ -10204,7 +10989,8 @@ class binary_reader
     */
     bool get_msgpack_array(const std::size_t len)
     {
-        if (JSON_HEDLEY_UNLIKELY(!sax->start_array(len)))
+        using call_start_ar_t = detail::sax_call_start_array_function<SAX>;
+        if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, len, chars_read)))
         {
             return false;
         }
@@ -10217,7 +11003,8 @@ class binary_reader
             }
         }
 
-        return sax->end_array();
+        using call_end_ar_t = detail::sax_call_end_array_function<SAX>;
+        return call_end_ar_t::call(sax, chars_read);
     }
 
     /*!
@@ -10226,7 +11013,8 @@ class binary_reader
     */
     bool get_msgpack_object(const std::size_t len)
     {
-        if (JSON_HEDLEY_UNLIKELY(!sax->start_object(len)))
+        using call_start_obj_t = detail::sax_call_start_object_function<SAX>;
+        if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, len, chars_read)))
         {
             return false;
         }
@@ -10235,7 +11023,8 @@ class binary_reader
         for (std::size_t i = 0; i < len; ++i)
         {
             get();
-            if (JSON_HEDLEY_UNLIKELY(!get_msgpack_string(key) || !sax->key(key)))
+            using call_t = detail::sax_call_key_function<SAX, string_t>;
+            if (JSON_HEDLEY_UNLIKELY(!get_msgpack_string(key) || !call_t::call(sax, key, chars_read)))
             {
                 return false;
             }
@@ -10247,7 +11036,7 @@ class binary_reader
             key.clear();
         }
 
-        return sax->end_object();
+        return detail::sax_call_end_object_function<SAX>::call(sax, chars_read);
     }
 
     ////////////
@@ -10460,9 +11249,9 @@ class binary_reader
                 return unexpect_eof(input_format_t::ubjson, "value");
 
             case 'T':  // true
-                return sax->boolean(true);
+                return detail::sax_call_boolean_function<SAX, void>::call(sax, true, chars_read);
             case 'F':  // false
-                return sax->boolean(false);
+                return detail::sax_call_boolean_function<SAX, void>::call(sax, false, chars_read);
 
             case 'Z':  // null
                 return detail::sax_call_null_function<SAX>::call(sax, chars_read);
@@ -10470,43 +11259,52 @@ class binary_reader
             case 'U':
             {
                 std::uint8_t number{};
-                return get_number(input_format_t::ubjson, number) && sax->number_unsigned(number);
+                return get_number(input_format_t::ubjson, number) &&
+                       detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>::call(sax, number, chars_read);
             }
 
             case 'i':
             {
                 std::int8_t number{};
-                return get_number(input_format_t::ubjson, number) && sax->number_integer(number);
+                return get_number(input_format_t::ubjson, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 'I':
             {
                 std::int16_t number{};
-                return get_number(input_format_t::ubjson, number) && sax->number_integer(number);
+                return get_number(input_format_t::ubjson, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 'l':
             {
                 std::int32_t number{};
-                return get_number(input_format_t::ubjson, number) && sax->number_integer(number);
+                return get_number(input_format_t::ubjson, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 'L':
             {
                 std::int64_t number{};
-                return get_number(input_format_t::ubjson, number) && sax->number_integer(number);
+                return get_number(input_format_t::ubjson, number) &&
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 'd':
             {
                 float number{};
-                return get_number(input_format_t::ubjson, number) && sax->number_float(static_cast<number_float_t>(number), "");
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                return get_number(input_format_t::ubjson, number) &&
+                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 'D':
             {
                 double number{};
-                return get_number(input_format_t::ubjson, number) && sax->number_float(static_cast<number_float_t>(number), "");
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                return get_number(input_format_t::ubjson, number) &&
+                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 'H':
@@ -10527,13 +11325,15 @@ class binary_reader
                     return sax->parse_error(chars_read, last_token, parse_error::create(113, chars_read, exception_message(input_format_t::ubjson, "byte after 'C' must be in range 0x00..0x7F; last byte: 0x" + last_token, "char"), BasicJsonType()));
                 }
                 string_t s(1, static_cast<typename string_t::value_type>(current));
-                return sax->string(s);
+                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                return call_t::call(sax, s, chars_read);
             }
 
             case 'S':  // string
             {
                 string_t s;
-                return get_ubjson_string(s) && sax->string(s);
+                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                return get_ubjson_string(s) && call_t::call(sax, s, chars_read);
             }
 
             case '[':  // array
@@ -10563,7 +11363,8 @@ class binary_reader
 
         if (size_and_type.first != string_t::npos)
         {
-            if (JSON_HEDLEY_UNLIKELY(!sax->start_array(size_and_type.first)))
+            using call_start_ar_t = detail::sax_call_start_array_function<SAX>;
+            if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, size_and_type.first, chars_read)))
             {
                 return false;
             }
@@ -10594,7 +11395,8 @@ class binary_reader
         }
         else
         {
-            if (JSON_HEDLEY_UNLIKELY(!sax->start_array(std::size_t(-1))))
+            using call_start_ar_t = detail::sax_call_start_array_function<SAX>;
+            if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, std::size_t(-1), chars_read)))
             {
                 return false;
             }
@@ -10609,7 +11411,8 @@ class binary_reader
             }
         }
 
-        return sax->end_array();
+        using call_end_ar_t = detail::sax_call_end_array_function<SAX>;
+        return call_end_ar_t::call(sax, chars_read);
     }
 
     /*!
@@ -10626,7 +11429,8 @@ class binary_reader
         string_t key;
         if (size_and_type.first != string_t::npos)
         {
-            if (JSON_HEDLEY_UNLIKELY(!sax->start_object(size_and_type.first)))
+            using call_start_obj_t = detail::sax_call_start_object_function<SAX>;
+            if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, size_and_type.first, chars_read)))
             {
                 return false;
             }
@@ -10635,7 +11439,8 @@ class binary_reader
             {
                 for (std::size_t i = 0; i < size_and_type.first; ++i)
                 {
-                    if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !sax->key(key)))
+                    using call_t = detail::sax_call_key_function<SAX, string_t>;
+                    if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
                     }
@@ -10650,7 +11455,8 @@ class binary_reader
             {
                 for (std::size_t i = 0; i < size_and_type.first; ++i)
                 {
-                    if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !sax->key(key)))
+                    using call_t = detail::sax_call_key_function<SAX, string_t>;
+                    if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
                     }
@@ -10664,14 +11470,16 @@ class binary_reader
         }
         else
         {
-            if (JSON_HEDLEY_UNLIKELY(!sax->start_object(std::size_t(-1))))
+            using call_start_obj_t_t = detail::sax_call_start_object_function<SAX>;
+            if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t_t::call(sax, std::size_t(-1), chars_read)))
             {
                 return false;
             }
 
             while (current != '}')
             {
-                if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key, false) || !sax->key(key)))
+                using call_key_t = detail::sax_call_key_function<SAX, string_t>;
+                if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key, false) || !call_key_t::call(sax, key, chars_read)))
                 {
                     return false;
                 }
@@ -10684,7 +11492,8 @@ class binary_reader
             }
         }
 
-        return sax->end_object();
+        using call_end_obj_t_t = detail::sax_call_end_object_function<SAX>;
+        return call_end_obj_t_t::call(sax, chars_read);
     }
 
     // Note, no reader for UBJSON binary types is implemented because they do
@@ -10729,11 +11538,17 @@ class binary_reader
         switch (result_number)
         {
             case token_type::value_integer:
-                return sax->number_integer(number_lexer.get_number_integer());
+                return detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number_lexer.get_number_integer(), chars_read);
             case token_type::value_unsigned:
-                return sax->number_unsigned(number_lexer.get_number_unsigned());
+            {
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
+                return call_t::call(sax, number_lexer.get_number_unsigned(), chars_read);
+            }
             case token_type::value_float:
-                return sax->number_float(number_lexer.get_number_float(), std::move(number_string));
+            {
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                return call_t::call(sax, number_lexer.get_number_float(), std::move(number_string), chars_read);
+            }
             case token_type::uninitialized:
             case token_type::literal_true:
             case token_type::literal_false:
@@ -11177,7 +11992,8 @@ class parser
                 {
                     case token_type::begin_object:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->start_object(std::size_t(-1))))
+                        using call_start_obj_t = detail::sax_call_start_object_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, std::size_t(-1), m_lexer)))
                         {
                             return false;
                         }
@@ -11185,7 +12001,8 @@ class parser
                         // closing } -> we are done
                         if (get_token() == token_type::end_object)
                         {
-                            if (JSON_HEDLEY_UNLIKELY(!sax->end_object()))
+                            using call_end_obj_t = detail::sax_call_end_object_function<SAX, lexer_t>;
+                            if (JSON_HEDLEY_UNLIKELY(!call_end_obj_t::call(sax, m_lexer)))
                             {
                                 return false;
                             }
@@ -11199,7 +12016,8 @@ class parser
                                                     m_lexer.get_token_string(),
                                                     parse_error::create(101, m_lexer.get_position(), exception_message(token_type::value_string, "object key"), BasicJsonType()));
                         }
-                        if (JSON_HEDLEY_UNLIKELY(!sax->key(m_lexer.get_string())))
+                        using call_key_t = detail::sax_call_key_function<SAX, string_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_key_t::call(sax, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
                         }
@@ -11222,7 +12040,8 @@ class parser
 
                     case token_type::begin_array:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->start_array(std::size_t(-1))))
+                        using call_start_ar_t = detail::sax_call_start_array_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, std::size_t(-1), m_lexer)))
                         {
                             return false;
                         }
@@ -11230,7 +12049,8 @@ class parser
                         // closing ] -> we are done
                         if (get_token() == token_type::end_array)
                         {
-                            if (JSON_HEDLEY_UNLIKELY(!sax->end_array()))
+                            using call_end_ar_t = detail::sax_call_end_array_function<SAX, lexer_t>;
+                            if (JSON_HEDLEY_UNLIKELY(!call_end_ar_t::call(sax, m_lexer)))
                             {
                                 return false;
                             }
@@ -11255,7 +12075,8 @@ class parser
                                                     out_of_range::create(406, "number overflow parsing '" + m_lexer.get_token_string() + "'", BasicJsonType()));
                         }
 
-                        if (JSON_HEDLEY_UNLIKELY(!sax->number_float(res, m_lexer.get_string())))
+                        using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, res, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
                         }
@@ -11265,7 +12086,8 @@ class parser
 
                     case token_type::literal_false:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->boolean(false)))
+                        using call_t =  detail::sax_call_boolean_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, false, m_lexer)))
                         {
                             return false;
                         }
@@ -11284,7 +12106,8 @@ class parser
 
                     case token_type::literal_true:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->boolean(true)))
+                        using call_t =  detail::sax_call_boolean_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, true, m_lexer)))
                         {
                             return false;
                         }
@@ -11293,7 +12116,8 @@ class parser
 
                     case token_type::value_integer:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->number_integer(m_lexer.get_number_integer())))
+                        using call_t = detail::sax_call_number_integer_function<SAX, number_integer_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_number_integer(), m_lexer)))
                         {
                             return false;
                         }
@@ -11302,7 +12126,8 @@ class parser
 
                     case token_type::value_string:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->string(m_lexer.get_string())))
+                        using call_t = detail::sax_call_string_function<SAX, string_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
                         }
@@ -11311,7 +12136,8 @@ class parser
 
                     case token_type::value_unsigned:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->number_unsigned(m_lexer.get_number_unsigned())))
+                        using call_t =  detail::sax_call_number_unsigned_function<SAX, number_unsigned_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_number_unsigned(), m_lexer)))
                         {
                             return false;
                         }
@@ -11366,7 +12192,8 @@ class parser
                 // closing ]
                 if (JSON_HEDLEY_LIKELY(last_token == token_type::end_array))
                 {
-                    if (JSON_HEDLEY_UNLIKELY(!sax->end_array()))
+                    using call_t = detail::sax_call_end_array_function<SAX, lexer_t>;
+                    if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer)))
                     {
                         return false;
                     }
@@ -11399,7 +12226,8 @@ class parser
                                             parse_error::create(101, m_lexer.get_position(), exception_message(token_type::value_string, "object key"), BasicJsonType()));
                 }
 
-                if (JSON_HEDLEY_UNLIKELY(!sax->key(m_lexer.get_string())))
+                using call_t = detail::sax_call_key_function<SAX, string_t, lexer_t>;
+                if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_string(), m_lexer)))
                 {
                     return false;
                 }
@@ -11420,7 +12248,8 @@ class parser
             // closing }
             if (JSON_HEDLEY_LIKELY(last_token == token_type::end_object))
             {
-                if (JSON_HEDLEY_UNLIKELY(!sax->end_object()))
+                using call_t = detail::sax_call_end_object_function<SAX, lexer_t>;
+                if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer)))
                 {
                     return false;
                 }

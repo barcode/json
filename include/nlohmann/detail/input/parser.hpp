@@ -186,7 +186,8 @@ class parser
                 {
                     case token_type::begin_object:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->start_object(std::size_t(-1))))
+                        using call_start_obj_t = detail::sax_call_start_object_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, std::size_t(-1), m_lexer)))
                         {
                             return false;
                         }
@@ -194,7 +195,8 @@ class parser
                         // closing } -> we are done
                         if (get_token() == token_type::end_object)
                         {
-                            if (JSON_HEDLEY_UNLIKELY(!sax->end_object()))
+                            using call_end_obj_t = detail::sax_call_end_object_function<SAX, lexer_t>;
+                            if (JSON_HEDLEY_UNLIKELY(!call_end_obj_t::call(sax, m_lexer)))
                             {
                                 return false;
                             }
@@ -208,7 +210,8 @@ class parser
                                                     m_lexer.get_token_string(),
                                                     parse_error::create(101, m_lexer.get_position(), exception_message(token_type::value_string, "object key"), BasicJsonType()));
                         }
-                        if (JSON_HEDLEY_UNLIKELY(!sax->key(m_lexer.get_string())))
+                        using call_key_t = detail::sax_call_key_function<SAX, string_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_key_t::call(sax, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
                         }
@@ -231,7 +234,8 @@ class parser
 
                     case token_type::begin_array:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->start_array(std::size_t(-1))))
+                        using call_start_ar_t = detail::sax_call_start_array_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, std::size_t(-1), m_lexer)))
                         {
                             return false;
                         }
@@ -239,7 +243,8 @@ class parser
                         // closing ] -> we are done
                         if (get_token() == token_type::end_array)
                         {
-                            if (JSON_HEDLEY_UNLIKELY(!sax->end_array()))
+                            using call_end_ar_t = detail::sax_call_end_array_function<SAX, lexer_t>;
+                            if (JSON_HEDLEY_UNLIKELY(!call_end_ar_t::call(sax, m_lexer)))
                             {
                                 return false;
                             }
@@ -264,7 +269,8 @@ class parser
                                                     out_of_range::create(406, "number overflow parsing '" + m_lexer.get_token_string() + "'", BasicJsonType()));
                         }
 
-                        if (JSON_HEDLEY_UNLIKELY(!sax->number_float(res, m_lexer.get_string())))
+                        using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, res, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
                         }
@@ -274,7 +280,8 @@ class parser
 
                     case token_type::literal_false:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->boolean(false)))
+                        using call_t =  detail::sax_call_boolean_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, false, m_lexer)))
                         {
                             return false;
                         }
@@ -293,7 +300,8 @@ class parser
 
                     case token_type::literal_true:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->boolean(true)))
+                        using call_t =  detail::sax_call_boolean_function<SAX, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, true, m_lexer)))
                         {
                             return false;
                         }
@@ -302,7 +310,8 @@ class parser
 
                     case token_type::value_integer:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->number_integer(m_lexer.get_number_integer())))
+                        using call_t = detail::sax_call_number_integer_function<SAX, number_integer_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_number_integer(), m_lexer)))
                         {
                             return false;
                         }
@@ -311,7 +320,8 @@ class parser
 
                     case token_type::value_string:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->string(m_lexer.get_string())))
+                        using call_t = detail::sax_call_string_function<SAX, string_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
                         }
@@ -320,7 +330,8 @@ class parser
 
                     case token_type::value_unsigned:
                     {
-                        if (JSON_HEDLEY_UNLIKELY(!sax->number_unsigned(m_lexer.get_number_unsigned())))
+                        using call_t =  detail::sax_call_number_unsigned_function<SAX, number_unsigned_t, lexer_t>;
+                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_number_unsigned(), m_lexer)))
                         {
                             return false;
                         }
@@ -375,7 +386,8 @@ class parser
                 // closing ]
                 if (JSON_HEDLEY_LIKELY(last_token == token_type::end_array))
                 {
-                    if (JSON_HEDLEY_UNLIKELY(!sax->end_array()))
+                    using call_t = detail::sax_call_end_array_function<SAX, lexer_t>;
+                    if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer)))
                     {
                         return false;
                     }
@@ -408,7 +420,8 @@ class parser
                                             parse_error::create(101, m_lexer.get_position(), exception_message(token_type::value_string, "object key"), BasicJsonType()));
                 }
 
-                if (JSON_HEDLEY_UNLIKELY(!sax->key(m_lexer.get_string())))
+                using call_t = detail::sax_call_key_function<SAX, string_t, lexer_t>;
+                if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_string(), m_lexer)))
                 {
                     return false;
                 }
@@ -429,7 +442,8 @@ class parser
             // closing }
             if (JSON_HEDLEY_LIKELY(last_token == token_type::end_object))
             {
-                if (JSON_HEDLEY_UNLIKELY(!sax->end_object()))
+                using call_t = detail::sax_call_end_object_function<SAX, lexer_t>;
+                if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer)))
                 {
                     return false;
                 }
