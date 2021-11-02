@@ -37,26 +37,26 @@ SOFTWARE.
 #include <nlohmann/json.hpp>
 
 // ???????
-template<
-        bool WithPos,
-        bool WithLex,
-        std::size_t NullPos,
-        std::size_t BoolPos,
-        std::size_t IntPos,
-        std::size_t UintPos,
-        std::size_t FltPos,
-        std::size_t StrPos,
-        std::size_t BinPos,
-        std::size_t KeyPos,
-        std::size_t SObjPos,
-        std::size_t EObjPos,
-        std::size_t SArrPos,
-        std::size_t EArrPos
->
+template <
+    bool WithPos,
+    bool WithLex,
+    std::size_t NullPos,
+    std::size_t BoolPos,
+    std::size_t IntPos,
+    std::size_t UintPos,
+    std::size_t FltPos,
+    std::size_t StrPos,
+    std::size_t BinPos,
+    std::size_t KeyPos,
+    std::size_t SObjPos,
+    std::size_t EObjPos,
+    std::size_t SArrPos,
+    std::size_t EArrPos
+    >
 struct Sax
 {
     using json = nlohmann::json;
-    
+
     bool null()
     {
         CHECK(!WithPos);
@@ -104,14 +104,14 @@ struct Sax
         return true;
     }
     template<bool Act = WithPos>
-    typename std::enable_if<Act, bool>::type number_integer(json::number_integer_t /*unused*/,std::size_t pos)
+    typename std::enable_if<Act, bool>::type number_integer(json::number_integer_t /*unused*/, std::size_t pos)
     {
         CHECK(!WithLex);
         CHECK(IntPos == pos);
         return true;
     }
     template<class LexT, bool Act = WithLex>
-    typename std::enable_if<Act, bool>::type number_integer(json::number_integer_t /*unused*/,const LexT& lex)
+    typename std::enable_if<Act, bool>::type number_integer(json::number_integer_t /*unused*/, const LexT& lex)
     {
         CHECK(IntPos == lex.get_position().chars_read_total);
         return true;
@@ -124,14 +124,14 @@ struct Sax
         return true;
     }
     template<bool Act = WithPos>
-    typename std::enable_if<Act, bool>::type number_unsigned(json::number_unsigned_t /*unused*/,std::size_t pos)
+    typename std::enable_if<Act, bool>::type number_unsigned(json::number_unsigned_t /*unused*/, std::size_t pos)
     {
         CHECK(!WithLex);
         CHECK(UintPos == pos);
         return true;
     }
     template<class LexT, bool Act = WithLex>
-    typename std::enable_if<Act, bool>::type number_unsigned(json::number_unsigned_t /*unused*/,const LexT& lex)
+    typename std::enable_if<Act, bool>::type number_unsigned(json::number_unsigned_t /*unused*/, const LexT& lex)
     {
         CHECK(UintPos == lex.get_position().chars_read_total);
         return true;
@@ -144,14 +144,14 @@ struct Sax
         return true;
     }
     template<bool Act = WithPos>
-    typename std::enable_if<Act, bool>::type number_float(json::number_float_t /*unused*/, const std::string& /*unused*/,std::size_t pos)
+    typename std::enable_if<Act, bool>::type number_float(json::number_float_t /*unused*/, const std::string& /*unused*/, std::size_t pos)
     {
         CHECK(!WithLex);
         CHECK(FltPos == pos);
         return true;
     }
     template<class LexT, bool Act = WithLex>
-    typename std::enable_if<Act, bool>::type number_float(json::number_float_t /*unused*/, const std::string& /*unused*/,const LexT& lex)
+    typename std::enable_if<Act, bool>::type number_float(json::number_float_t /*unused*/, const std::string& /*unused*/, const LexT& lex)
     {
         CHECK(FltPos == lex.get_position().chars_read_total);
         return true;
@@ -164,14 +164,14 @@ struct Sax
         return true;
     }
     template<bool Act = WithPos>
-    typename std::enable_if<Act, bool>::type string(std::string& /*unused*/,std::size_t pos)
+    typename std::enable_if<Act, bool>::type string(std::string& /*unused*/, std::size_t pos)
     {
         CHECK(!WithLex);
         CHECK(StrPos == pos);
         return true;
     }
     template<class LexT, bool Act = WithLex>
-    typename std::enable_if<Act, bool>::type string(std::string& /*unused*/,const LexT& lex)
+    typename std::enable_if<Act, bool>::type string(std::string& /*unused*/, const LexT& lex)
     {
         CHECK(StrPos == lex.get_position().chars_read_total);
         return true;
@@ -184,14 +184,14 @@ struct Sax
         return true;
     }
     template<bool Act = WithPos>
-    typename std::enable_if<Act, bool>::type binary(std::vector<std::uint8_t>& /*unused*/,std::size_t pos)
+    typename std::enable_if<Act, bool>::type binary(std::vector<std::uint8_t>& /*unused*/, std::size_t pos)
     {
         CHECK(!WithLex);
         CHECK(BinPos == pos);
         return true;
     }
     template<class LexT, bool Act = WithLex>
-    typename std::enable_if<Act, bool>::type binary(std::vector<std::uint8_t>& /*unused*/,const LexT& lex)
+    typename std::enable_if<Act, bool>::type binary(std::vector<std::uint8_t>& /*unused*/, const LexT& lex)
     {
         CHECK(BinPos == lex.get_position().chars_read_total);
         return true;
@@ -204,14 +204,14 @@ struct Sax
         return true;
     }
     template<bool Act = WithPos>
-    typename std::enable_if<Act, bool>::type start_object(std::size_t /*unused*/,long unsigned int pos)
+    typename std::enable_if<Act, bool>::type start_object(std::size_t /*unused*/, long unsigned int pos)
     {
         CHECK(!WithLex);
         CHECK(SObjPos == pos);
         return true;
     }
     template<class LexT, bool Act = WithLex>
-    typename std::enable_if<Act, bool>::type start_object(std::size_t /*unused*/,const LexT& lex)
+    typename std::enable_if<Act, bool>::type start_object(std::size_t /*unused*/, const LexT& lex)
     {
         CHECK(SObjPos == lex.get_position().chars_read_total);
         return true;
@@ -224,14 +224,14 @@ struct Sax
         return true;
     }
     template<bool Act = WithPos>
-    typename std::enable_if<Act, bool>::type key(std::string& /*unused*/,std::size_t pos)
+    typename std::enable_if<Act, bool>::type key(std::string& /*unused*/, std::size_t pos)
     {
         CHECK(!WithLex);
         CHECK(KeyPos == pos);
         return true;
     }
     template<class LexT, bool Act = WithLex>
-    typename std::enable_if<Act, bool>::type key(std::string& /*unused*/,const LexT& lex)
+    typename std::enable_if<Act, bool>::type key(std::string& /*unused*/, const LexT& lex)
     {
         CHECK(KeyPos == lex.get_position().chars_read_total);
         return true;
@@ -264,14 +264,14 @@ struct Sax
         return true;
     }
     template<bool Act = WithPos>
-    typename std::enable_if<Act, bool>::type start_array(std::size_t /*unused*/,std::size_t pos)
+    typename std::enable_if<Act, bool>::type start_array(std::size_t /*unused*/, std::size_t pos)
     {
         CHECK(!WithLex);
         CHECK(SArrPos == pos);
         return true;
     }
     template<class LexT, bool Act = WithLex>
-    typename std::enable_if<Act, bool>::type start_array(std::size_t /*unused*/,const LexT& lex)
+    typename std::enable_if<Act, bool>::type start_array(std::size_t /*unused*/, const LexT& lex)
     {
         CHECK(SArrPos == lex.get_position().chars_read_total);
         return true;
@@ -310,29 +310,29 @@ struct Opt
     static constexpr bool WithLex = WithLexV;
 };
 
-using OptNone = Opt<0,0>;
-using OptLex = Opt<0,1>;
-using OptPos = Opt<1,0>;
-using OptBoth = Opt<1,1>;
+using OptNone = Opt<0, 0>;
+using OptLex = Opt<0, 1>;
+using OptPos = Opt<1, 0>;
+using OptBoth = Opt<1, 1>;
 
 TEST_CASE_TEMPLATE("json", T, OptNone, /*OptLex,*/ OptPos, OptBoth )
 {
-    Sax<
-            /*WithPos*/ T::WithPos,
-            /*WithLex*/ T::WithLex,
-            /*NullPos*/ 30,
-            /*BoolPos*/ 21,
-            /*IntPos*/ 16,
-            /*UintPos*/ 13,
-            /*FltPos*/ 25,
-            /*StrPos*/ 36,
-            /*BinPos*/ 0,
-            /*KeyPos*/ 8,
-            /*SObjPos*/ 1,
-            /*EObjPos*/ 38,
-            /*SArrPos*/ 12,
-            /*EArrPos*/ 37
-            >sax;
+    Sax <
+    /*WithPos*/ T::WithPos,
+    /*WithLex*/ T::WithLex,
+    /*NullPos*/ 30,
+    /*BoolPos*/ 21,
+    /*IntPos*/ 16,
+    /*UintPos*/ 13,
+    /*FltPos*/ 25,
+    /*StrPos*/ 36,
+    /*BinPos*/ 0,
+    /*KeyPos*/ 8,
+    /*SObjPos*/ 1,
+    /*EObjPos*/ 38,
+    /*SArrPos*/ 12,
+    /*EArrPos*/ 37
+    > sax;
     const std::string str = R"({"array" : [1,-1,true,4.2,null,"str"]})";
     CHECK(nlohmann::json::sax_parse(str, &sax));
 }

@@ -11,11 +11,36 @@ namespace nlohmann
 {
 namespace detail
 {
-template<typename SAX, typename LexerType = void>
-struct sax_call_null_function
+template <
+    template<typename...> typename DerivedTempl,
+    typename SAX,
+    typename LexerType,
+    typename...Ts >
+struct sax_call_function
 {
+    using Derived = DerivedTempl<SAX, Ts..., LexerType>;
+
     static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
 
+    static constexpr bool detected_call_base =
+        is_detected_exact<bool, Derived::template call_base_t, SAX>::value;
+
+    static constexpr bool detected_call_with_pos =
+        is_detected_exact<bool, Derived::template call_with_pos_t, SAX>::value;
+
+    static constexpr bool detected_call_with_lex =
+        !no_lexer &&
+        is_detected_exact<bool, Derived::template call_with_lex_t, SAX>::value;
+
+    static constexpr bool valid =
+        detected_call_base ||
+        detected_call_with_pos ||
+        detected_call_with_lex;
+};
+
+template<typename SAX, typename LexerType = void>
+struct sax_call_null_function : sax_call_function<sax_call_null_function, SAX, LexerType>
+{
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().null());
 
@@ -24,21 +49,6 @@ struct sax_call_null_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().null(*std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -79,10 +89,8 @@ struct sax_call_null_function
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_boolean_function
+struct sax_call_boolean_function : sax_call_function<sax_call_boolean_function, SAX, LexerType>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().boolean(std::declval<bool>()));
 
@@ -91,21 +99,6 @@ struct sax_call_boolean_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().boolean(std::declval<bool>(), *std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -146,10 +139,8 @@ struct sax_call_boolean_function
 };
 
 template<typename SAX, typename Integer, typename LexerType = void>
-struct sax_call_number_integer_function
+struct sax_call_number_integer_function : sax_call_function<sax_call_number_integer_function, SAX, LexerType, Integer>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>()));
 
@@ -158,21 +149,6 @@ struct sax_call_number_integer_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>(), *std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -213,10 +189,8 @@ struct sax_call_number_integer_function
 };
 
 template<typename SAX, typename Unsigned, typename LexerType = void>
-struct sax_call_number_unsigned_function
+struct sax_call_number_unsigned_function : sax_call_function<sax_call_number_unsigned_function, SAX, LexerType, Unsigned>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>()));
 
@@ -225,21 +199,6 @@ struct sax_call_number_unsigned_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>(), *std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -280,10 +239,8 @@ struct sax_call_number_unsigned_function
 };
 
 template<typename SAX, typename Float, typename String, typename LexerType = void>
-struct sax_call_number_float_function
+struct sax_call_number_float_function : sax_call_function<sax_call_number_float_function, SAX, LexerType, Float, String>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<const String&>()));
 
@@ -292,21 +249,6 @@ struct sax_call_number_float_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<const String&>(), *std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -347,10 +289,8 @@ struct sax_call_number_float_function
 };
 
 template<typename SAX, typename String, typename LexerType = void>
-struct sax_call_string_function
+struct sax_call_string_function : sax_call_function<sax_call_string_function, SAX, LexerType, String>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().string(std::declval<String&>()));
 
@@ -359,21 +299,6 @@ struct sax_call_string_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().string(std::declval<String&>(), *std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -414,10 +339,8 @@ struct sax_call_string_function
 };
 
 template<typename SAX, typename Binary, typename LexerType = void>
-struct sax_call_binary_function
+struct sax_call_binary_function : sax_call_function<sax_call_binary_function, SAX, LexerType, Binary>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().binary(std::declval<Binary&>()));
 
@@ -426,21 +349,6 @@ struct sax_call_binary_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().binary(std::declval<Binary&>(), *std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -481,10 +389,8 @@ struct sax_call_binary_function
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_start_object_function
+struct sax_call_start_object_function : sax_call_function<sax_call_start_object_function, SAX, LexerType>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>()));
 
@@ -493,21 +399,6 @@ struct sax_call_start_object_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>(), *std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -548,10 +439,8 @@ struct sax_call_start_object_function
 };
 
 template<typename SAX, typename String, typename LexerType = void>
-struct sax_call_key_function
+struct sax_call_key_function : sax_call_function<sax_call_key_function, SAX, LexerType, String>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().key(std::declval<String&>()));
 
@@ -560,21 +449,6 @@ struct sax_call_key_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().key(std::declval<String&>(), *std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -615,10 +489,8 @@ struct sax_call_key_function
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_end_object_function
+struct sax_call_end_object_function : sax_call_function<sax_call_end_object_function, SAX, LexerType>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().end_object());
 
@@ -627,21 +499,6 @@ struct sax_call_end_object_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().end_object(*std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -682,10 +539,8 @@ struct sax_call_end_object_function
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_start_array_function
+struct sax_call_start_array_function : sax_call_function<sax_call_start_array_function, SAX, LexerType>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>()));
 
@@ -694,21 +549,6 @@ struct sax_call_start_array_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>(), *std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
@@ -749,10 +589,8 @@ struct sax_call_start_array_function
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_end_array_function
+struct sax_call_end_array_function : sax_call_function<sax_call_end_array_function, SAX, LexerType>
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
-
     template<typename T>
     using call_base_t = decltype(std::declval<T&>().end_array());
 
@@ -761,21 +599,6 @@ struct sax_call_end_array_function
 
     template<typename T>
     using call_with_lex_t = decltype(std::declval<T&>().end_array(*std::declval<const LexerType*>()));
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !no_lexer &&
-        is_detected_exact<bool, call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
