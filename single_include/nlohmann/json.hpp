@@ -8283,11 +8283,11 @@ struct sax_call_function
         is_detected_exact<bool, Derived::template call_base_t, SAX>::value;
 
     static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, Derived::template call_with_pos_t, SAX>::value;
+        is_detected_exact<bool, Derived::template call_base_t, SAX, std::size_t>::value;
 
     static constexpr bool detected_call_with_lex =
         !no_lexer &&
-        is_detected_exact<bool, Derived::template call_with_lex_t, SAX>::value;
+        is_detected_exact<bool, Derived::template call_base_t, SAX, const LexerType>::value;
 
     static constexpr bool valid =
         detected_call_base ||
@@ -8346,8 +8346,8 @@ struct sax_call_null_function : sax_call_function<
         sax_call_null_function<SAX, LexerType>, 
         SAX, LexerType>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().null()); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().null(std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().null(std::declval<std::size_t>())); // remove
@@ -8367,8 +8367,8 @@ struct sax_call_boolean_function : sax_call_function<
         sax_call_boolean_function<SAX, LexerType>, 
         SAX, LexerType, bool>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().boolean(std::declval<bool>())); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().boolean(std::declval<bool>(), std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().boolean(std::declval<bool>(), std::declval<std::size_t>())); // remove
@@ -8388,8 +8388,8 @@ struct sax_call_number_integer_function : sax_call_function<
         sax_call_number_integer_function<SAX, Integer, LexerType>, 
         SAX, LexerType, Integer>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>())); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>(), std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>(), std::declval<std::size_t>())); // remove
@@ -8409,8 +8409,8 @@ struct sax_call_number_unsigned_function : sax_call_function<
         sax_call_number_unsigned_function<SAX, Unsigned, LexerType>, 
         SAX, LexerType, Unsigned>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>())); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>(), std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>(), std::declval<std::size_t>())); // remove
@@ -8430,8 +8430,8 @@ struct sax_call_number_float_function : sax_call_function<
         sax_call_number_float_function<SAX, Float, String, LexerType>, 
         SAX, LexerType, Float, String>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<String>())); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<String>(), std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<String>(), std::declval<std::size_t>())); // remove
@@ -8451,8 +8451,8 @@ struct sax_call_string_function : sax_call_function<
         sax_call_string_function<SAX, String, LexerType>, 
         SAX, LexerType, String>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().string(std::declval<String>())); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().string(std::declval<String>(), std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().string(std::declval<String>(), std::declval<std::size_t>())); // remove
@@ -8472,8 +8472,8 @@ struct sax_call_binary_function : sax_call_function<
         sax_call_binary_function<SAX, Binary, LexerType>, 
         SAX, LexerType, Binary>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().binary(std::declval<Binary>())); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().binary(std::declval<Binary>(), std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().binary(std::declval<Binary>(), std::declval<std::size_t>())); // remove
@@ -8493,8 +8493,8 @@ struct sax_call_start_object_function : sax_call_function<
         sax_call_start_object_function<SAX, LexerType>, 
         SAX, LexerType, std::size_t>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>())); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>(), std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>(), std::declval<std::size_t>())); // remove
@@ -8514,8 +8514,8 @@ struct sax_call_key_function : sax_call_function<
         sax_call_key_function<SAX, String, LexerType>, 
         SAX, LexerType, String>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().key(std::declval<String>())); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().key(std::declval<String>(), std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().key(std::declval<String>(), std::declval<std::size_t>())); // remove
@@ -8535,8 +8535,8 @@ struct sax_call_end_object_function : sax_call_function<
         sax_call_end_object_function<SAX, LexerType>, 
         SAX, LexerType>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().end_object()); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().end_object(std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().end_object(std::declval<std::size_t>())); // remove
@@ -8556,8 +8556,8 @@ struct sax_call_start_array_function : sax_call_function<
         sax_call_start_array_function<SAX, LexerType>, 
         SAX, LexerType, std::size_t>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>())); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>(), std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>(), std::declval<std::size_t>())); // remove
@@ -8577,8 +8577,8 @@ struct sax_call_end_array_function : sax_call_function<
         sax_call_end_array_function<SAX, LexerType>, 
         SAX, LexerType>
 {
-    template<typename T>
-    using call_base_t = decltype(std::declval<T&>().end_array()); // add Ts... for pos / lex
+    template<typename T, typename...Ts>
+    using call_base_t = decltype(std::declval<T&>().end_array(std::declval<Ts>()...));
 
     template<typename T>
     using call_with_pos_t = decltype(std::declval<T&>().end_array(std::declval<std::size_t>())); // remove
