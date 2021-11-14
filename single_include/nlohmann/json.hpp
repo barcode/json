@@ -8270,7 +8270,6 @@ namespace nlohmann
 {
 namespace detail
 {
-#if 1
 template <
     typename Derived,
     typename SAX,
@@ -8341,106 +8340,6 @@ struct sax_call_function
         return call(sax, std::forward<Ts>(ts)..., lex.get_position().chars_read_total);//4
     }
 };
-#else
-
-template <
-    template<typename...> typename DerivedTempl,
-    typename SAX,
-    typename LexerType,
-    typename...Ts >
-struct sax_call_function_vars
-{
-    using Derived = DerivedTempl<SAX, Ts..., LexerType>;
-
-    static constexpr bool detected_call_base =
-        is_detected_exact<bool, Derived::template call_base_t, SAX>::value;
-
-    static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, Derived::template call_with_pos_t, SAX>::value;
-
-    static constexpr bool detected_call_with_lex =
-        !std::is_same<LexerType, void>::value &&
-        is_detected_exact<bool, Derived::template call_with_lex_t, SAX>::value;
-
-    static constexpr bool valid =
-        detected_call_base ||
-        detected_call_with_pos ||
-        detected_call_with_lex;
-};
-
-template <
-    template<typename...> typename DerivedTempl,
-    typename SAX,
-    typename LexerType,
-    typename...Ts >
-struct sax_call_function : sax_call_function_vars<DerivedTempl, SAX, LexerType, Ts...>
-{
-    using Derived = DerivedTempl<SAX, Ts..., LexerType>;
-    
-    template<typename SaxT = SAX, typename LexT = LexerType>
-    static typename std::enable_if <
-    sax_call_function_vars<DerivedTempl, SaxT, LexT, Ts...>::detected_call_with_pos
-    , bool >::type
-    call(SaxT* sax, Ts...ts, std::size_t pos)
-    {
-        return Derived::do_call(sax, std::forward<Ts>(ts)..., pos);
-    }
-
-    template<typename SaxT = SAX, typename LexT = LexerType>
-    static typename std::enable_if <
-    !sax_call_function_vars<DerivedTempl, SaxT, LexT, Ts...>::detected_call_with_pos
-    , bool >::type
-    call(SaxT* sax, Ts...ts, std::size_t pos)
-    {
-        return Derived::do_call(sax, std::forward<Ts>(ts)...);
-    }
-    
-    template<typename SaxT = SAX, typename LexT = LexerType>
-    static typename std::enable_if <
-    sax_call_function_vars<DerivedTempl, SaxT, LexT, Ts...>::detected_call_with_lex
-    , bool >::type
-    call(SaxT* sax, Ts...ts, const LexT& lex)
-    {
-        return Derived::do_call(sax, std::forward<Ts>(ts)..., lex);
-    }
-
-    template<typename SaxT = SAX, typename LexT = LexerType>
-    static typename std::enable_if <
-    !sax_call_function_vars<DerivedTempl, SaxT, LexT, Ts...>::detected_call_with_lex
-    , bool >::type
-    call(SaxT* sax, Ts...ts, const LexT& lex)
-    {
-        return call(sax, std::forward<Ts>(ts)..., lex.get_position().chars_read_total);
-    }
-};
-
-template <
-    template<typename...> typename DerivedTempl,
-    typename SAX,
-    typename...Ts >
-struct sax_call_function<DerivedTempl, SAX, void, Ts...> : sax_call_function_vars<DerivedTempl, SAX, void, Ts...>
-{
-    using Derived = DerivedTempl<SAX, Ts..., void>;
-    
-    template<typename SaxT = SAX>
-    static typename std::enable_if <
-    sax_call_function_vars<DerivedTempl, SaxT, void, Ts...>::detected_call_with_pos
-    , bool >::type
-    call(SaxT* sax, Ts...ts, std::size_t pos)
-    {
-        return Derived::do_call(sax, std::forward<Ts>(ts)..., pos);
-    }
-
-    template<typename SaxT = SAX>
-    static typename std::enable_if <
-    !sax_call_function_vars<DerivedTempl, SaxT, void, Ts...>::detected_call_with_pos
-    , bool >::type
-    call(SaxT* sax, Ts...ts, std::size_t pos)
-    {
-        return Derived::do_call(sax, std::forward<Ts>(ts)...);
-    }
-};
-#endif
 
 template<typename SAX, typename LexerType = void>
 struct sax_call_null_function : sax_call_function<
