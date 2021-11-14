@@ -129,12 +129,10 @@ template <
 struct sax_call_function
 {
     static constexpr bool no_lexer = std::is_same<LEX, void>::value;
-    
+
      template<typename SAX2, typename...Ts2>
-     using call_t = decltype(
-         DirectCaller::call(std::declval<SAX2*>(), std::declval<Ts2>()...)
-     );
-    
+     using call_t = decltype(DirectCaller::call(std::declval<SAX2*>(), std::declval<Ts2>()...));
+
     static constexpr bool detected_call_base =
         is_detected_exact<bool, call_t, SAX, Ts...>::value;
 
