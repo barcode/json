@@ -8277,9 +8277,8 @@ struct null_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().null(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->null(std::forward<Ts>(ts)...);
     }
@@ -8290,9 +8289,8 @@ struct boolean_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().boolean(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->boolean(std::forward<Ts>(ts)...);
     }
@@ -8303,9 +8301,8 @@ struct number_integer_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().number_integer(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->number_integer(std::forward<Ts>(ts)...);
     }
@@ -8316,9 +8313,8 @@ struct number_unsigned_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().number_unsigned(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->number_unsigned(std::forward<Ts>(ts)...);
     }
@@ -8329,9 +8325,8 @@ struct number_float_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().number_float(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->number_float(std::forward<Ts>(ts)...);
     }
@@ -8342,9 +8337,8 @@ struct string_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().string(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->string(std::forward<Ts>(ts)...);
     }
@@ -8355,9 +8349,8 @@ struct binary_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().binary(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->binary(std::forward<Ts>(ts)...);
     }
@@ -8368,9 +8361,8 @@ struct start_object_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().start_object(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->start_object(std::forward<Ts>(ts)...);
     }
@@ -8381,9 +8373,8 @@ struct key_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().key(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->key(std::forward<Ts>(ts)...);
     }
@@ -8394,9 +8385,8 @@ struct end_object_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().end_object(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->end_object(std::forward<Ts>(ts)...);
     }
@@ -8407,9 +8397,8 @@ struct start_array_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().start_array(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->start_array(std::forward<Ts>(ts)...);
     }
@@ -8420,9 +8409,8 @@ struct end_array_direct
     template<typename SAX, typename...Ts> 
     using call_t = decltype(std::declval<SAX&>().end_array(std::declval<Ts>()...));
     
-    template<typename SAX, typename...Ts> 
-    static typename std::enable_if<is_detected_exact<bool, call_t, SAX, Ts...>::value, bool>::type
-    call(SAX* sax, Ts&&...ts)
+    template<typename SAX, typename...Ts>
+    static bool call(SAX* sax, Ts&&...ts)
     {
         return sax->end_array(std::forward<Ts>(ts)...);
     }
@@ -8438,15 +8426,18 @@ struct sax_call_function
 {
     static constexpr bool no_lexer = std::is_same<LEX, void>::value;
     
+    template<typename SAX2, typename...Ts2>
+    using call_t = typename DirectCaller::template call_t<SAX2, Ts2...>;
+    
     static constexpr bool detected_call_base =
-        is_detected_exact<bool, DirectCaller::template call_t, SAX, Ts...>::value;
+        is_detected_exact<bool, call_t, SAX, Ts...>::value;
 
     static constexpr bool detected_call_with_pos =
-        is_detected_exact<bool, DirectCaller::template call_t, SAX, Ts..., std::size_t>::value;
+        is_detected_exact<bool, call_t, SAX, Ts..., std::size_t>::value;
 
     static constexpr bool detected_call_with_lex =
         !no_lexer &&
-        is_detected_exact<bool, DirectCaller::template call_t, SAX, Ts..., const LEX>::value;
+        is_detected_exact<bool, call_t, SAX, Ts..., const LEX>::value;
 
     static constexpr bool valid =
         detected_call_base ||
