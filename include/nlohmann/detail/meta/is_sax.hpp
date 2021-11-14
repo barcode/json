@@ -13,14 +13,12 @@ namespace detail
 {
 #if 1
 template <
-    template<typename...> typename DerivedTempl,
+    typename Derived,
     typename SAX,
     typename LexerType,
     typename...Ts >
 struct sax_call_function
 {
-    using Derived = DerivedTempl<SAX, Ts..., LexerType>;
-
     static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
 
     static constexpr bool detected_call_base =
@@ -41,39 +39,47 @@ struct sax_call_function
     
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
-    DerivedTempl<SaxT, Ts..., LexT>::detected_call_with_pos
+    std::is_same<SaxT, SAX>::value &&
+    std::is_same<LexT, LexerType>::value &&
+    sax_call_function<Derived, SaxT, LexT, Ts...>::detected_call_with_pos
     , bool >::type
     call(SaxT* sax, Ts...ts, std::size_t pos)
     {
-        return Derived::do_call(sax, std::forward<Ts>(ts)..., pos);
+        return Derived::do_call(sax, std::forward<Ts>(ts)..., pos); //1
     }
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
-    !DerivedTempl<SaxT, Ts..., LexT>::detected_call_with_pos
+    std::is_same<SaxT, SAX>::value &&
+    std::is_same<LexT, LexerType>::value &&
+    !sax_call_function<Derived, SaxT, LexT, Ts...>::detected_call_with_pos
     , bool >::type
     call(SaxT* sax, Ts...ts, std::size_t pos)
     {
-        return Derived::do_call(sax, std::forward<Ts>(ts)...);
+        return Derived::do_call(sax, std::forward<Ts>(ts)...); //2
     }
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
-    !DerivedTempl<SaxT, Ts..., LexT>::no_lexer &&
-    DerivedTempl<SaxT, Ts..., LexT>::detected_call_with_lex
+    std::is_same<SaxT, SAX>::value &&
+    std::is_same<LexT, LexerType>::value &&
+    !sax_call_function<Derived, SaxT, LexT, Ts...>::no_lexer &&
+    sax_call_function<Derived, SaxT, LexT, Ts...>::detected_call_with_lex
     , bool >::type
     call(SaxT* sax, Ts...ts, const LexT& lex)
     {
-        return Derived::do_call(sax, std::forward<Ts>(ts)..., lex);
+        return Derived::do_call(sax, std::forward<Ts>(ts)..., lex); //3
     }
 
     template<typename SaxT = SAX, typename LexT = LexerType>
     static typename std::enable_if <
-    !DerivedTempl<SaxT, Ts..., LexT>::no_lexer &&
-    !DerivedTempl<SaxT, Ts..., LexT>::detected_call_with_lex
+    std::is_same<SaxT, SAX>::value &&
+    std::is_same<LexT, LexerType>::value &&
+    !sax_call_function<Derived, SaxT, LexT, Ts...>::no_lexer &&
+    !sax_call_function<Derived, SaxT, LexT, Ts...>::detected_call_with_lex
     , bool >::type
     call(SaxT* sax, Ts...ts, const LexT& lex)
     {
-        return call(sax, std::forward<Ts>(ts)..., lex.get_position().chars_read_total);
+        return call(sax, std::forward<Ts>(ts)..., lex.get_position().chars_read_total);//4
     }
 };
 #else
@@ -178,228 +184,252 @@ struct sax_call_function<DerivedTempl, SAX, void, Ts...> : sax_call_function_var
 #endif
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_null_function : sax_call_function<sax_call_null_function, SAX, LexerType>
+struct sax_call_null_function : sax_call_function<
+        sax_call_null_function<SAX, LexerType>, 
+        SAX, LexerType>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().null());
+    using call_base_t = decltype(std::declval<T&>().null()); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().null(std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().null(std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().null(*std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().null(*std::declval<const LexerType*>())); // remove
 
     template<typename...Ts>
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->null(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_boolean_function : sax_call_function<sax_call_boolean_function, SAX, LexerType>
+struct sax_call_boolean_function : sax_call_function<
+        sax_call_boolean_function<SAX, LexerType>, 
+        SAX, LexerType, bool>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().boolean(std::declval<bool>()));
+    using call_base_t = decltype(std::declval<T&>().boolean(std::declval<bool>())); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().boolean(std::declval<bool>(), std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().boolean(std::declval<bool>(), std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().boolean(std::declval<bool>(), *std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().boolean(std::declval<bool>(), *std::declval<const LexerType*>())); // remove
     
     template<typename...Ts>
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->boolean(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename Integer, typename LexerType = void>
-struct sax_call_number_integer_function : sax_call_function<sax_call_number_integer_function, SAX, LexerType, Integer>
+struct sax_call_number_integer_function : sax_call_function<
+        sax_call_number_integer_function<SAX, Integer, LexerType>, 
+        SAX, LexerType, Integer>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>()));
+    using call_base_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>())); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>(), std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>(), std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>(), *std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().number_integer(std::declval<Integer>(), *std::declval<const LexerType*>())); // remove
              
     template<typename...Ts >
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->number_integer(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename Unsigned, typename LexerType = void>
-struct sax_call_number_unsigned_function : sax_call_function<sax_call_number_unsigned_function, SAX, LexerType, Unsigned>
+struct sax_call_number_unsigned_function : sax_call_function<
+        sax_call_number_unsigned_function<SAX, Unsigned, LexerType>, 
+        SAX, LexerType, Unsigned>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>()));
+    using call_base_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>())); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>(), std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>(), std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>(), *std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().number_unsigned(std::declval<Unsigned>(), *std::declval<const LexerType*>())); // remove
                       
     template<typename...Ts>
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->number_unsigned(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename Float, typename String, typename LexerType = void>
-struct sax_call_number_float_function : sax_call_function<sax_call_number_float_function, SAX, LexerType, Float, String>
+struct sax_call_number_float_function : sax_call_function<
+        sax_call_number_float_function<SAX, Float, String, LexerType>, 
+        SAX, LexerType, Float, String>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<String>()));
+    using call_base_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<String>())); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<String>(), std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<String>(), std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<String>(), *std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().number_float(std::declval<Float>(), std::declval<String>(), *std::declval<const LexerType*>())); // remove
                                
     template<typename...Ts> 
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->number_float(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename String, typename LexerType = void>
-struct sax_call_string_function : sax_call_function<sax_call_string_function, SAX, LexerType, String>
+struct sax_call_string_function : sax_call_function<
+        sax_call_string_function<SAX, String, LexerType>, 
+        SAX, LexerType, String>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().string(std::declval<String>()));
+    using call_base_t = decltype(std::declval<T&>().string(std::declval<String>())); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().string(std::declval<String>(), std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().string(std::declval<String>(), std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().string(std::declval<String>(), *std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().string(std::declval<String>(), *std::declval<const LexerType*>())); // remove
                                
     template<typename...Ts> 
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->string(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename Binary, typename LexerType = void>
-struct sax_call_binary_function : sax_call_function<sax_call_binary_function, SAX, LexerType, Binary>
+struct sax_call_binary_function : sax_call_function<
+        sax_call_binary_function<SAX, Binary, LexerType>, 
+        SAX, LexerType, Binary>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().binary(std::declval<Binary>()));
+    using call_base_t = decltype(std::declval<T&>().binary(std::declval<Binary>())); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().binary(std::declval<Binary>(), std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().binary(std::declval<Binary>(), std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().binary(std::declval<Binary>(), *std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().binary(std::declval<Binary>(), *std::declval<const LexerType*>())); // remove
     
     template<typename...Ts> 
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->binary(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_start_object_function : sax_call_function<sax_call_start_object_function, SAX, LexerType>
+struct sax_call_start_object_function : sax_call_function<
+        sax_call_start_object_function<SAX, LexerType>, 
+        SAX, LexerType, std::size_t>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>()));
+    using call_base_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>())); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>(), std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>(), std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>(), *std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().start_object(std::declval<std::size_t>(), *std::declval<const LexerType*>())); // remove
     
     template<typename...Ts> 
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->start_object(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename String, typename LexerType = void>
-struct sax_call_key_function : sax_call_function<sax_call_key_function, SAX, LexerType, String>
+struct sax_call_key_function : sax_call_function<
+        sax_call_key_function<SAX, String, LexerType>, 
+        SAX, LexerType, String>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().key(std::declval<String>()));
+    using call_base_t = decltype(std::declval<T&>().key(std::declval<String>())); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().key(std::declval<String>(), std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().key(std::declval<String>(), std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().key(std::declval<String>(), *std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().key(std::declval<String>(), *std::declval<const LexerType*>())); // remove
     
     template<typename...Ts> 
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->key(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_end_object_function : sax_call_function<sax_call_end_object_function, SAX, LexerType>
+struct sax_call_end_object_function : sax_call_function<
+        sax_call_end_object_function<SAX, LexerType>, 
+        SAX, LexerType>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().end_object());
+    using call_base_t = decltype(std::declval<T&>().end_object()); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().end_object(std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().end_object(std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().end_object(*std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().end_object(*std::declval<const LexerType*>())); // remove
     
     template<typename...Ts> 
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->end_object(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_start_array_function : sax_call_function<sax_call_start_array_function, SAX, LexerType>
+struct sax_call_start_array_function : sax_call_function<
+        sax_call_start_array_function<SAX, LexerType>, 
+        SAX, LexerType, std::size_t>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>()));
+    using call_base_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>())); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>(), std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>(), std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>(), *std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().start_array(std::declval<std::size_t>(), *std::declval<const LexerType*>())); // remove
     
     template<typename...Ts> 
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->start_array(std::forward<Ts>(ts)...);
     }
 };
 
 template<typename SAX, typename LexerType = void>
-struct sax_call_end_array_function : sax_call_function<sax_call_end_array_function, SAX, LexerType>
+struct sax_call_end_array_function : sax_call_function<
+        sax_call_end_array_function<SAX, LexerType>, 
+        SAX, LexerType>
 {
     template<typename T>
-    using call_base_t = decltype(std::declval<T&>().end_array());
+    using call_base_t = decltype(std::declval<T&>().end_array()); // add Ts... for pos / lex
 
     template<typename T>
-    using call_with_pos_t = decltype(std::declval<T&>().end_array(std::declval<std::size_t>()));
+    using call_with_pos_t = decltype(std::declval<T&>().end_array(std::declval<std::size_t>())); // remove
 
     template<typename T>
-    using call_with_lex_t = decltype(std::declval<T&>().end_array(*std::declval<const LexerType*>()));
+    using call_with_lex_t = decltype(std::declval<T&>().end_array(*std::declval<const LexerType*>())); // remove
     
     template<typename...Ts> 
-    bool do_call(SAX sax, Ts&&...ts)
+    static bool do_call(SAX* sax, Ts&&...ts)
     {
         return sax->end_array(std::forward<Ts>(ts)...);
     }

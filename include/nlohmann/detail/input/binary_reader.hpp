@@ -268,7 +268,7 @@ class binary_reader
             case 0x01: // double
             {
                 double number{};
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number<double, true>(input_format_t::bson, number) &&
                        call_t::call(sax, static_cast<number_float_t>(number), "", element_type_parse_position);
             }
@@ -277,7 +277,7 @@ class binary_reader
             {
                 std::int32_t len{};
                 string_t value;
-                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                using call_t = detail::sax_call_string_function<SAX, string_t&>;
                 return get_number<std::int32_t, true>(input_format_t::bson, len) && get_bson_string(len, value) &&
                        call_t::call(sax, value, element_type_parse_position);
             }
@@ -296,7 +296,7 @@ class binary_reader
             {
                 std::int32_t len{};
                 binary_t value;
-                using call_t = detail::sax_call_binary_function<SAX, binary_t>;
+                using call_t = detail::sax_call_binary_function<SAX, binary_t&>;
                 return get_number<std::int32_t, true>(input_format_t::bson, len) && get_bson_binary(len, value) &&
                        call_t::call(sax, value, element_type_parse_position);
             }
@@ -363,7 +363,7 @@ class binary_reader
                 return false;
             }
 
-            using call_t = detail::sax_call_key_function<SAX, string_t>;
+            using call_t = detail::sax_call_key_function<SAX, string_t&>;
             if (!is_array && !call_t::call(sax, key, chars_read))
             {
                 return false;
@@ -571,7 +571,7 @@ class binary_reader
             case 0x5F: // Binary data (indefinite length)
             {
                 binary_t b;
-                using call_t = detail::sax_call_binary_function<SAX, binary_t>;
+                using call_t = detail::sax_call_binary_function<SAX, binary_t&>;
                 return get_cbor_binary(b) && call_t::call(sax, b, chars_read);
             }
 
@@ -607,7 +607,7 @@ class binary_reader
             case 0x7F: // UTF-8 string (indefinite length)
             {
                 string_t s;
-                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                using call_t = detail::sax_call_string_function<SAX, string_t&>;
                 return get_cbor_string(s) && call_t::call(sax, s, chars_read);
             }
 
@@ -820,7 +820,7 @@ class binary_reader
                                 return parse_cbor_internal(true, tag_handler);
                         }
                         get();
-                        using call_t = detail::sax_call_binary_function<SAX, binary_t>;
+                        using call_t = detail::sax_call_binary_function<SAX, binary_t&>;
                         return get_cbor_binary(b) && call_t::call(sax, b, chars_read);
                     }
 
@@ -882,7 +882,7 @@ class binary_reader
                             return std::ldexp(mant + 1024, exp - 25);
                     }
                 }();
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return call_t::call(
                            sax,
                            (half & 0x8000u) != 0
@@ -895,7 +895,7 @@ class binary_reader
             case 0xFA: // Single-Precision Float (four-byte IEEE 754)
             {
                 float number{};
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::cbor, number) &&
                        call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
@@ -903,7 +903,7 @@ class binary_reader
             case 0xFB: // Double-Precision Float (eight-byte IEEE 754)
             {
                 double number{};
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::cbor, number) &&
                        call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
@@ -1173,7 +1173,7 @@ class binary_reader
                 for (std::size_t i = 0; i < len; ++i)
                 {
                     get();
-                    using call_t = detail::sax_call_key_function<SAX, string_t>;
+                    using call_t = detail::sax_call_key_function<SAX, string_t&>;
                     if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
@@ -1190,7 +1190,7 @@ class binary_reader
             {
                 while (get() != 0xFF)
                 {
-                    using call_t = detail::sax_call_key_function<SAX, string_t>;
+                    using call_t = detail::sax_call_key_function<SAX, string_t&>;
                     if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
@@ -1434,7 +1434,7 @@ class binary_reader
             case 0xDB: // str 32
             {
                 string_t s;
-                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                using call_t = detail::sax_call_string_function<SAX, string_t&>;
                 return get_msgpack_string(s) && call_t::call(sax, s, chars_read);
             }
 
@@ -1461,13 +1461,13 @@ class binary_reader
             {
                 binary_t b;
                 return get_msgpack_binary(b) &&
-                       detail::sax_call_binary_function<SAX, binary_t>::call(sax, b, chars_read);
+                       detail::sax_call_binary_function<SAX, binary_t&>::call(sax, b, chars_read);
             }
 
             case 0xCA: // float 32
             {
                 float number{};
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::msgpack, number) &&
                        call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
@@ -1475,7 +1475,7 @@ class binary_reader
             case 0xCB: // float 64
             {
                 double number{};
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::msgpack, number) &&
                        call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
@@ -1842,7 +1842,7 @@ class binary_reader
         for (std::size_t i = 0; i < len; ++i)
         {
             get();
-            using call_t = detail::sax_call_key_function<SAX, string_t>;
+            using call_t = detail::sax_call_key_function<SAX, string_t&>;
             if (JSON_HEDLEY_UNLIKELY(!get_msgpack_string(key) || !call_t::call(sax, key, chars_read)))
             {
                 return false;
@@ -2113,7 +2113,7 @@ class binary_reader
             case 'd':
             {
                 float number{};
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::ubjson, number) &&
                        call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
@@ -2121,7 +2121,7 @@ class binary_reader
             case 'D':
             {
                 double number{};
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::ubjson, number) &&
                        call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
@@ -2144,14 +2144,14 @@ class binary_reader
                     return sax->parse_error(chars_read, last_token, parse_error::create(113, chars_read, exception_message(input_format_t::ubjson, "byte after 'C' must be in range 0x00..0x7F; last byte: 0x" + last_token, "char"), BasicJsonType()));
                 }
                 string_t s(1, static_cast<typename string_t::value_type>(current));
-                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                using call_t = detail::sax_call_string_function<SAX, string_t&>;
                 return call_t::call(sax, s, chars_read);
             }
 
             case 'S':  // string
             {
                 string_t s;
-                using call_t = detail::sax_call_string_function<SAX, string_t>;
+                using call_t = detail::sax_call_string_function<SAX, string_t&>;
                 return get_ubjson_string(s) && call_t::call(sax, s, chars_read);
             }
 
@@ -2258,7 +2258,7 @@ class binary_reader
             {
                 for (std::size_t i = 0; i < size_and_type.first; ++i)
                 {
-                    using call_t = detail::sax_call_key_function<SAX, string_t>;
+                    using call_t = detail::sax_call_key_function<SAX, string_t&>;
                     if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
@@ -2274,7 +2274,7 @@ class binary_reader
             {
                 for (std::size_t i = 0; i < size_and_type.first; ++i)
                 {
-                    using call_t = detail::sax_call_key_function<SAX, string_t>;
+                    using call_t = detail::sax_call_key_function<SAX, string_t&>;
                     if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
@@ -2297,7 +2297,7 @@ class binary_reader
 
             while (current != '}')
             {
-                using call_key_t = detail::sax_call_key_function<SAX, string_t>;
+                using call_key_t = detail::sax_call_key_function<SAX, string_t&>;
                 if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key, false) || !call_key_t::call(sax, key, chars_read)))
                 {
                     return false;
@@ -2365,7 +2365,7 @@ class binary_reader
             }
             case token_type::value_float:
             {
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return call_t::call(sax, number_lexer.get_number_float(), std::move(number_string), chars_read);
             }
             case token_type::uninitialized:

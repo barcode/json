@@ -210,7 +210,7 @@ class parser
                                                     m_lexer.get_token_string(),
                                                     parse_error::create(101, m_lexer.get_position(), exception_message(token_type::value_string, "object key"), BasicJsonType()));
                         }
-                        using call_key_t = detail::sax_call_key_function<SAX, string_t, lexer_t>;
+                        using call_key_t = detail::sax_call_key_function<SAX, string_t&, lexer_t>;
                         if (JSON_HEDLEY_UNLIKELY(!call_key_t::call(sax, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
@@ -269,7 +269,7 @@ class parser
                                                     out_of_range::create(406, "number overflow parsing '" + m_lexer.get_token_string() + "'", BasicJsonType()));
                         }
 
-                        using call_t = detail::sax_call_number_float_function<SAX, number_float_t, string_t, lexer_t>;
+                        using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&, lexer_t>;
                         if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, res, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
@@ -320,7 +320,7 @@ class parser
 
                     case token_type::value_string:
                     {
-                        using call_t = detail::sax_call_string_function<SAX, string_t, lexer_t>;
+                        using call_t = detail::sax_call_string_function<SAX, string_t&, lexer_t>;
                         if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
@@ -420,7 +420,7 @@ class parser
                                             parse_error::create(101, m_lexer.get_position(), exception_message(token_type::value_string, "object key"), BasicJsonType()));
                 }
 
-                using call_t = detail::sax_call_key_function<SAX, string_t, lexer_t>;
+                using call_t = detail::sax_call_key_function<SAX, string_t&, lexer_t>;
                 if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_string(), m_lexer)))
                 {
                     return false;
