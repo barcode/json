@@ -8430,11 +8430,11 @@ struct sax_call_end_array_function_direct
 template <
     typename DirectCaller,
     typename SAX,
-    typename LexerType,
+    typename LEX,
     typename...Ts >
 struct sax_call_function
 {
-    static constexpr bool no_lexer = std::is_same<LexerType, void>::value;
+    static constexpr bool no_lexer = std::is_same<LEX, void>::value;
     
     static constexpr bool detected_call_base =
         is_detected_exact<bool, DirectCaller::template call_t, SAX, Ts...>::value;
@@ -8444,7 +8444,7 @@ struct sax_call_function
 
     static constexpr bool detected_call_with_lex =
         !no_lexer &&
-        is_detected_exact<bool, DirectCaller::template call_t, SAX, Ts..., const LexerType>::value;
+        is_detected_exact<bool, DirectCaller::template call_t, SAX, Ts..., const LEX>::value;
 
     static constexpr bool valid =
         detected_call_base ||
@@ -8452,10 +8452,10 @@ struct sax_call_function
         detected_call_with_lex;
     
     
-    template<typename SaxT = SAX, typename LexT = LexerType>
+    template<typename SaxT = SAX, typename LexT = LEX>
     static typename std::enable_if <
     std::is_same<SaxT, SAX>::value &&
-    std::is_same<LexT, LexerType>::value &&
+    std::is_same<LexT, LEX>::value &&
     sax_call_function<DirectCaller, SaxT, LexT, Ts...>::detected_call_with_pos
     , bool >::type
     call(SaxT* sax, Ts...ts, std::size_t pos)
@@ -8463,20 +8463,20 @@ struct sax_call_function
         return DirectCaller::call(sax, std::forward<Ts>(ts)..., pos); //1
     }
 
-    template<typename SaxT = SAX, typename LexT = LexerType>
+    template<typename SaxT = SAX, typename LexT = LEX>
     static typename std::enable_if <
     std::is_same<SaxT, SAX>::value &&
-    std::is_same<LexT, LexerType>::value &&
+    std::is_same<LexT, LEX>::value &&
     !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::detected_call_with_pos
     , bool >::type
     call(SaxT* sax, Ts...ts, std::size_t pos)
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)...); //2
     }
-    template<typename SaxT = SAX, typename LexT = LexerType>
+    template<typename SaxT = SAX, typename LexT = LEX>
     static typename std::enable_if <
     std::is_same<SaxT, SAX>::value &&
-    std::is_same<LexT, LexerType>::value &&
+    std::is_same<LexT, LEX>::value &&
     !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::no_lexer &&
     sax_call_function<DirectCaller, SaxT, LexT, Ts...>::detected_call_with_lex
     , bool >::type
@@ -8485,10 +8485,10 @@ struct sax_call_function
         return DirectCaller::call(sax, std::forward<Ts>(ts)..., lex); //3
     }
 
-    template<typename SaxT = SAX, typename LexT = LexerType>
+    template<typename SaxT = SAX, typename LexT = LEX>
     static typename std::enable_if <
     std::is_same<SaxT, SAX>::value &&
-    std::is_same<LexT, LexerType>::value &&
+    std::is_same<LexT, LEX>::value &&
     !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::no_lexer &&
     !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::detected_call_with_lex
     , bool >::type
@@ -8498,65 +8498,65 @@ struct sax_call_function
     }
 };
 
-template<typename SAX, typename LexerType = void>
+template<typename SAX, typename LEX = void>
 using sax_call_null_function = sax_call_function<
         sax_call_null_function_direct, 
-        SAX, LexerType>;
+        SAX, LEX>;
 
-template<typename SAX, typename LexerType = void>
+template<typename SAX, typename LEX = void>
 using sax_call_boolean_function = sax_call_function<
         sax_call_boolean_function_direct, 
-        SAX, LexerType, bool>;
+        SAX, LEX, bool>;
 
-template<typename SAX, typename Integer, typename LexerType = void>
+template<typename SAX, typename Integer, typename LEX = void>
 using sax_call_number_integer_function = sax_call_function<
         sax_call_number_integer_function_direct, 
-        SAX, LexerType, Integer>;
+        SAX, LEX, Integer>;
 
-template<typename SAX, typename Unsigned, typename LexerType = void>
+template<typename SAX, typename Unsigned, typename LEX = void>
 using sax_call_number_unsigned_function = sax_call_function<
         sax_call_number_unsigned_function_direct, 
-        SAX, LexerType, Unsigned>;
+        SAX, LEX, Unsigned>;
 
-template<typename SAX, typename Float, typename String, typename LexerType = void>
+template<typename SAX, typename Float, typename String, typename LEX = void>
 using sax_call_number_float_function = sax_call_function<
         sax_call_number_float_function_direct, 
-        SAX, LexerType, Float, String>;
+        SAX, LEX, Float, String>;
 
-template<typename SAX, typename String, typename LexerType = void>
+template<typename SAX, typename String, typename LEX = void>
 using sax_call_string_function = sax_call_function<
         sax_call_string_function_direct, 
-        SAX, LexerType, String>;
+        SAX, LEX, String>;
 
-template<typename SAX, typename Binary, typename LexerType = void>
+template<typename SAX, typename Binary, typename LEX = void>
 using sax_call_binary_function = sax_call_function<
         sax_call_binary_function_direct, 
-        SAX, LexerType, Binary>;
+        SAX, LEX, Binary>;
 
-template<typename SAX, typename LexerType = void>
+template<typename SAX, typename LEX = void>
 using sax_call_start_object_function = sax_call_function<
         sax_call_start_object_function_direct, 
-        SAX, LexerType, std::size_t>;
+        SAX, LEX, std::size_t>;
 
-template<typename SAX, typename String, typename LexerType = void>
+template<typename SAX, typename String, typename LEX = void>
 using sax_call_key_function = sax_call_function<
         sax_call_key_function_direct, 
-        SAX, LexerType, String>;
+        SAX, LEX, String>;
 
-template<typename SAX, typename LexerType = void>
+template<typename SAX, typename LEX = void>
 using sax_call_end_object_function = sax_call_function<
         sax_call_end_object_function_direct, 
-        SAX, LexerType>;
+        SAX, LEX>;
 
-template<typename SAX, typename LexerType = void>
+template<typename SAX, typename LEX = void>
 using sax_call_start_array_function = sax_call_function<
         sax_call_start_array_function_direct, 
-        SAX, LexerType, std::size_t>;
+        SAX, LEX, std::size_t>;
 
-template<typename SAX, typename LexerType = void>
+template<typename SAX, typename LEX = void>
 using sax_call_end_array_function = sax_call_function<
         sax_call_end_array_function_direct, 
-        SAX, LexerType>;
+        SAX, LEX>;
 
 template<typename T, typename Exception>
 using parse_error_function_t = decltype(std::declval<T&>().parse_error(
