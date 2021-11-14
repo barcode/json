@@ -15,9 +15,6 @@ namespace sax_call_function
 {
 struct null_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().null(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->null(std::forward<Ts>(ts)...))
     {
@@ -27,9 +24,6 @@ struct null_direct
 
 struct boolean_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().boolean(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->boolean(std::forward<Ts>(ts)...))
     {
@@ -39,9 +33,6 @@ struct boolean_direct
 
 struct number_integer_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().number_integer(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->number_integer(std::forward<Ts>(ts)...))
     {
@@ -51,9 +42,6 @@ struct number_integer_direct
 
 struct number_unsigned_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().number_unsigned(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->number_unsigned(std::forward<Ts>(ts)...))
     {
@@ -63,9 +51,6 @@ struct number_unsigned_direct
 
 struct number_float_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().number_float(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->number_float(std::forward<Ts>(ts)...))
     {
@@ -75,9 +60,6 @@ struct number_float_direct
 
 struct string_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().string(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->string(std::forward<Ts>(ts)...))
     {
@@ -87,9 +69,6 @@ struct string_direct
 
 struct binary_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().binary(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->binary(std::forward<Ts>(ts)...))
     {
@@ -99,9 +78,6 @@ struct binary_direct
 
 struct start_object_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().start_object(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->start_object(std::forward<Ts>(ts)...))
     {
@@ -111,9 +87,6 @@ struct start_object_direct
 
 struct key_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().key(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->key(std::forward<Ts>(ts)...))
     {
@@ -123,9 +96,6 @@ struct key_direct
 
 struct end_object_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().end_object(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->end_object(std::forward<Ts>(ts)...))
     {
@@ -135,9 +105,6 @@ struct end_object_direct
 
 struct start_array_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().start_array(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->start_array(std::forward<Ts>(ts)...))
     {
@@ -147,16 +114,12 @@ struct start_array_direct
 
 struct end_array_direct
 {
-    template<typename SAX, typename...Ts> 
-    using call_t = decltype(std::declval<SAX&>().end_array(std::declval<Ts>()...));
-    
     template<typename SAX, typename...Ts>
     static auto call(SAX* sax, Ts&&...ts) -> decltype(sax->end_array(std::forward<Ts>(ts)...))
     {
         return sax->end_array(std::forward<Ts>(ts)...);
     }
 };
-////////////////
 
 template <
     typename DirectCaller,
@@ -167,9 +130,6 @@ struct sax_call_function
 {
     static constexpr bool no_lexer = std::is_same<LEX, void>::value;
     
-    // template<typename SAX2, typename...Ts2>
-    // using call_t = typename DirectCaller::template call_t<SAX2, Ts2...>;
-     
      template<typename SAX2, typename...Ts2>
      using call_t = decltype(
          DirectCaller::call(std::declval<SAX2*>(), std::declval<Ts2>()...)
