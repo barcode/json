@@ -227,6 +227,93 @@ using start_array = sax_call_function<start_array_direct, SAX, LEX, std::size_t>
 
 template<typename SAX, typename LEX = void>
 using end_array = sax_call_function<end_array_direct, SAX, LEX>;
+
+template<class T>
+using size_t_to_void = typename std::enable_if<! std::is_same<const std::size_t&, const T&>::value, T>::type;
+
+template<typename SAX, typename T>
+bool null_indirect(SAX* sax, T&& t)
+{
+    using call_t = sax_call_function<null_direct, SAX, size_t_to_void<T>>;
+    return call_t::call(sax, std::forward<T>(t));
+}
+
+template<typename SAX, typename T>
+bool boolean_indirect(SAX* sax, bool b, T&& t)
+{
+    using call_t = sax_call_function<boolean_direct, SAX, size_t_to_void<T>, bool>;
+    return call_t::call(sax, b, std::forward<T>(t));
+}
+
+template<typename SAX, typename Integer, typename T>
+bool number_integer_indirect(SAX* sax, Integer i, T&& t)
+{
+    using call_t = sax_call_function<number_integer_direct, SAX, size_t_to_void<T>, Integer>;
+    return call_t::call(sax, i, std::forward<T>(t));
+}
+
+template<typename SAX, typename Unsigned, typename T>
+bool number_unsigned_indirect(SAX* sax, Unsigned u, T&& t)
+{
+    using call_t = sax_call_function<number_unsigned_direct, SAX, size_t_to_void<T>, Unsigned>;
+    return call_t::call(sax, u, std::forward<T>(t));
+}
+
+template<typename SAX, typename Float, typename String, typename T>
+bool number_float_indirect(SAX* sax, Float f, const String& s, T&& t)
+{
+    using call_t = sax_call_function<number_float_direct, SAX, size_t_to_void<T>, Float, const String&>;
+    return call_t::call(sax, f, s, std::forward<T>(t));
+}
+
+template<typename SAX, typename String, typename T>
+bool string_indirect(SAX* sax, String& s, T&& t)
+{
+    using call_t = sax_call_function<string_direct, SAX, size_t_to_void<T>, String&>;
+    return call_t::call(sax,  s, std::forward<T>(t));
+}
+
+template<typename SAX, typename Binary, typename T>
+bool binary_indirect(SAX* sax, Binary& b, T&& t)
+{
+    using call_t = sax_call_function<binary_direct, SAX, size_t_to_void<T>, Binary&>;
+    return call_t::call(sax, b, std::forward<T>(t));
+}
+
+template<typename SAX, typename T>
+bool start_object_indirect(SAX* sax, std::size_t sz, T&& t)
+{
+    using call_t = sax_call_function<start_object_direct, SAX, size_t_to_void<T>, std::size_t>;
+    return call_t::call(sax, sz, std::forward<T>(t));
+}
+
+template<typename SAX, typename String, typename T>
+bool key_indirect(SAX* sax, String& s, T&& t)
+{
+    using call_t = sax_call_function<key_direct, SAX, size_t_to_void<T>, String&>;
+    return call_t::call(sax, s, std::forward<T>(t));
+}
+
+template<typename SAX, typename T>
+bool end_object_indirect(SAX* sax, T&& t)
+{
+    using call_t = sax_call_function<end_object_direct, SAX, size_t_to_void<T>>;
+    return call_t::call(sax, std::forward<T>(t));
+}
+
+template<typename SAX, typename T>
+bool start_array_indirect(SAX* sax, std::size_t sz, T&& t)
+{
+    using call_t = sax_call_function<start_array_direct, SAX, size_t_to_void<T>, std::size_t>;
+    return call_t::call(sax, sz, std::forward<T>(t));
+}
+
+template<typename SAX, typename T>
+bool end_array_indirect(SAX* sax, T&& t)
+{
+    using call_t = sax_call_function<end_array_direct, SAX, size_t_to_void<T>>;
+    return call_t::call(sax, std::forward<T>(t));
+}
 }
 
 template<typename T, typename Exception>
