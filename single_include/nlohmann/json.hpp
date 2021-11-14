@@ -8408,35 +8408,32 @@ struct sax_call_function
         detected_call_with_lex;
     
     
-    template<typename SaxT = SAX, typename LexT = LEX>
+    template<typename LexT = LEX>
     static typename std::enable_if <
-    std::is_same<SaxT, SAX>::value &&
     std::is_same<LexT, LEX>::value &&
-    sax_call_function<DirectCaller, SaxT, LexT, Ts...>::detected_call_with_pos
+    sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_pos
     , bool >::type
-    call(SaxT* sax, Ts...ts, std::size_t pos)
+    call(SAX* sax, Ts...ts, std::size_t pos)
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)..., pos); //1
     }
 
-    template<typename SaxT = SAX, typename LexT = LEX>
+    template<typename LexT = LEX>
     static typename std::enable_if <
-    std::is_same<SaxT, SAX>::value &&
     std::is_same<LexT, LEX>::value &&
-    !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::detected_call_with_pos
+    !sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_pos
     , bool >::type
-    call(SaxT* sax, Ts...ts, std::size_t pos)
+    call(SAX* sax, Ts...ts, std::size_t pos)
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)...); //2
     }
-    template<typename SaxT = SAX, typename LexT = LEX>
+    template<typename LexT = LEX>
     static typename std::enable_if <
-    std::is_same<SaxT, SAX>::value &&
     std::is_same<LexT, LEX>::value &&
-    !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::no_lexer &&
-    sax_call_function<DirectCaller, SaxT, LexT, Ts...>::detected_call_with_lex
+    !sax_call_function<DirectCaller, SAX, LexT, Ts...>::no_lexer &&
+    sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_lex
     , bool >::type
-    call(SaxT* sax, Ts...ts, const LexT& lex)
+    call(SAX* sax, Ts...ts, const LexT& lex)
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)..., lex); //3
     }
