@@ -70,7 +70,7 @@ struct Sax
         CHECK(NullPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type null(const LexT& lex)
     {
         CHECK(NullPos == lex.get_position().chars_read_total);
@@ -90,7 +90,7 @@ struct Sax
         CHECK(BoolPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type boolean(bool /*unused*/, const LexT& lex)
     {
         CHECK(BoolPos == lex.get_position().chars_read_total);
@@ -110,7 +110,7 @@ struct Sax
         CHECK(IntPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type number_integer(json::number_integer_t /*unused*/, const LexT& lex)
     {
         CHECK(IntPos == lex.get_position().chars_read_total);
@@ -130,7 +130,7 @@ struct Sax
         CHECK(UintPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type number_unsigned(json::number_unsigned_t /*unused*/, const LexT& lex)
     {
         CHECK(UintPos == lex.get_position().chars_read_total);
@@ -150,7 +150,7 @@ struct Sax
         CHECK(FltPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type number_float(json::number_float_t /*unused*/, const std::string& /*unused*/, const LexT& lex)
     {
         CHECK(FltPos == lex.get_position().chars_read_total);
@@ -170,7 +170,7 @@ struct Sax
         CHECK(StrPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type string(std::string& /*unused*/, const LexT& lex)
     {
         CHECK(StrPos == lex.get_position().chars_read_total);
@@ -190,7 +190,7 @@ struct Sax
         CHECK(BinPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type binary(std::vector<std::uint8_t>& /*unused*/, const LexT& lex)
     {
         CHECK(BinPos == lex.get_position().chars_read_total);
@@ -210,7 +210,7 @@ struct Sax
         CHECK(SObjPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type start_object(std::size_t /*unused*/, const LexT& lex)
     {
         CHECK(SObjPos == lex.get_position().chars_read_total);
@@ -230,7 +230,7 @@ struct Sax
         CHECK(KeyPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type key(std::string& /*unused*/, const LexT& lex)
     {
         CHECK(KeyPos == lex.get_position().chars_read_total);
@@ -250,7 +250,7 @@ struct Sax
         CHECK(EObjPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type end_object(const LexT& lex)
     {
         CHECK(EObjPos == lex.get_position().chars_read_total);
@@ -270,7 +270,7 @@ struct Sax
         CHECK(SArrPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type start_array(std::size_t /*unused*/, const LexT& lex)
     {
         CHECK(SArrPos == lex.get_position().chars_read_total);
@@ -290,7 +290,7 @@ struct Sax
         CHECK(EArrPos == pos);
         return true;
     }
-    template<class LexT, bool Act = WithLex>
+    template<class LexT, bool Act = WithLex && !std::is_same<LexT, std::size_t>::value>
     typename std::enable_if<Act, bool>::type end_array(const LexT& lex)
     {
         CHECK(EArrPos == lex.get_position().chars_read_total);
@@ -315,7 +315,7 @@ using OptLex = Opt<0, 1>;
 using OptPos = Opt<1, 0>;
 using OptBoth = Opt<1, 1>;
 
-TEST_CASE_TEMPLATE("json", T, OptNone, /*OptLex,*/ OptPos, OptBoth )
+TEST_CASE_TEMPLATE("json", T, OptNone, OptLex, OptPos, OptBoth )
 {
     Sax <
     /*WithPos*/ T::WithPos,
