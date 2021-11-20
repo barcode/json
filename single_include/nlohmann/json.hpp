@@ -8431,15 +8431,13 @@ struct sax_call_function
         return DirectCaller::call(sax, std::forward<Ts>(ts)...); //2
     }
     
-    struct dummy{};
-    
     template<typename SaxT = SAX>
     static typename std::enable_if <
     std::is_same<SaxT, SAX>::value &&
     !sax_call_function<DirectCaller, SaxT, LEX, Ts...>::no_lexer &&
     sax_call_function<DirectCaller, SaxT, LEX, Ts...>::detected_call_with_lex
     , bool >::type
-    call(SaxT* sax, Ts...ts, const typename std::conditional<no_lexer,dummy,LEX>::type& lex) //3
+    call(SaxT* sax, Ts...ts, const typename std::conditional<no_lexer,void*,LEX>::type& lex) //3
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)..., lex); //3
     }
@@ -8450,7 +8448,7 @@ struct sax_call_function
     !sax_call_function<DirectCaller, SaxT, LEX, Ts...>::no_lexer &&
     !sax_call_function<DirectCaller, SaxT, LEX, Ts...>::detected_call_with_lex
     , bool >::type
-    call(SaxT* sax, Ts...ts, const typename std::conditional<no_lexer,dummy,LEX>::type& lex)//4
+    call(SaxT* sax, Ts...ts, const typename std::conditional<no_lexer,void*,LEX>::type& lex)//4
     {
         return call(sax, std::forward<Ts>(ts)..., lex.get_position().chars_read_total);//4
     }
