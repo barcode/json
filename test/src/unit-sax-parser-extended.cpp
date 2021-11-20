@@ -52,6 +52,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type null(std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_null.count(pos));
         return true;
     }
@@ -72,6 +73,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type boolean(bool /*unused*/, std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_boolean.count(pos));
         return true;
     }
@@ -92,6 +94,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type number_integer(json::number_integer_t /*unused*/, std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_number_integer.count(pos));
         return true;
     }
@@ -112,6 +115,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type number_unsigned(json::number_unsigned_t /*unused*/, std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_number_unsigned.count(pos));
         return true;
     }
@@ -132,6 +136,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type number_float(json::number_float_t /*unused*/, const std::string& /*unused*/, std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_number_float.count(pos));
         return true;
     }
@@ -152,6 +157,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type string(std::string& /*unused*/, std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_string.count(pos));
         return true;
     }
@@ -172,6 +178,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type binary(std::vector<std::uint8_t>& /*unused*/, std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_binary.count(pos));
         return true;
     }
@@ -192,6 +199,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type start_object(std::size_t /*unused*/, long unsigned int pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_start_object.count(pos));
         return true;
     }
@@ -212,6 +220,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type key(std::string& /*unused*/, std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_key.count(pos));
         return true;
     }
@@ -232,6 +241,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type end_object(std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_end_object.count(pos));
         return true;
     }
@@ -252,6 +262,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type start_array(std::size_t /*unused*/, std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_start_array.count(pos));
         return true;
     }
@@ -272,6 +283,7 @@ struct Sax
     typename std::enable_if<Act, bool>::type end_array(std::size_t pos)
     {
         CHECK((!WithLex || LexCallImpossible));
+        INFO("pos = " << pos);
         CHECK(1 == pos_end_array.count(pos));
         return true;
     }
@@ -316,22 +328,22 @@ using OptBoth = Opt<1, 1>;
 TEST_CASE_TEMPLATE("extended parser", T, OptNone, OptLex, OptPos, OptBoth )
 {
     INFO("WithPos " << T::WithPos << ", WithLex " << T::WithLex);
-    const std::string str = R"({"array" : [1,-1,true,4.2,null,"str"]})";
+    const std::string str = R"({"array" : [123456789,-1,true,4.2,null,"str"]})";
     SECTION("json")
     {
         Sax</*LexCallImpossible*/ false, T::WithPos, T::WithLex> sax;
         sax.pos_start_object.emplace(1);
         sax.pos_key.emplace(8);
         sax.pos_start_array.emplace(12);
-        sax.pos_number_unsigned.emplace(13);
-        sax.pos_number_integer.emplace(16);
-        sax.pos_boolean.emplace(21);
-        sax.pos_number_float.emplace(25);
-        sax.pos_null.emplace(30);
-        sax.pos_string.emplace(36);
-        sax.pos_end_array.emplace(37);
-        sax.pos_end_object.emplace(38);
-        CHECK(nlohmann::json::sax_parse(str, &sax));
+        sax.pos_number_unsigned.emplace(21);
+        sax.pos_number_integer.emplace(24);
+        sax.pos_boolean.emplace(29);
+        sax.pos_number_float.emplace(33);
+        sax.pos_null.emplace(38);
+        sax.pos_string.emplace(44);
+        sax.pos_end_array.emplace(45);
+        sax.pos_end_object.emplace(46);
+        CHECK(nlohmann::json::sax_parse(str, &sax, nlohmann::json::input_format_t::json));
     }
     SECTION("bson")
     {
@@ -349,8 +361,60 @@ TEST_CASE_TEMPLATE("extended parser", T, OptNone, OptLex, OptPos, OptBoth )
         sax.pos_string.emplace(48);
         sax.pos_end_array.emplace(59);
         sax.pos_end_object.emplace(60);
-        
-        const bool result = nlohmann::json::sax_parse(bson, &sax, nlohmann::json::input_format_t::bson);
-        CHECK(result);
+        CHECK(nlohmann::json::sax_parse(bson, &sax, nlohmann::json::input_format_t::bson));
+    }
+    SECTION("cbor")
+    {
+        const auto j = nlohmann::json::parse(str);
+        const auto cbor = nlohmann::json::to_cbor(j);
+        Sax</*LexCallImpossible*/ true, T::WithPos, T::WithLex> sax;
+        sax.pos_start_object.emplace(1);
+        sax.pos_key.emplace(7);
+        sax.pos_start_array.emplace(8);
+        sax.pos_number_unsigned.emplace(13);
+        sax.pos_number_integer.emplace(14);
+        sax.pos_boolean.emplace(15);
+        sax.pos_number_float.emplace(24);
+        sax.pos_null.emplace(25);
+        sax.pos_string.emplace(29);
+        sax.pos_end_array.emplace(29);
+        sax.pos_end_object.emplace(29);
+        CHECK(nlohmann::json::sax_parse(cbor, &sax, nlohmann::json::input_format_t::cbor));
+    }
+    SECTION("msgpack")
+    {
+        const auto j = nlohmann::json::parse(str);
+        const auto cbor = nlohmann::json::to_msgpack(j);
+        Sax</*LexCallImpossible*/ true, T::WithPos, T::WithLex> sax;
+        sax.pos_start_object.emplace(1);
+        sax.pos_key.emplace(7);
+        sax.pos_start_array.emplace(8);
+        sax.pos_number_unsigned.emplace(13);
+        sax.pos_number_integer.emplace(14);
+        sax.pos_boolean.emplace(15);
+        sax.pos_number_float.emplace(24);
+        sax.pos_null.emplace(25);
+        sax.pos_string.emplace(29);
+        sax.pos_end_array.emplace(29);
+        sax.pos_end_object.emplace(29);
+        CHECK(nlohmann::json::sax_parse(cbor, &sax, nlohmann::json::input_format_t::msgpack));
+    }
+    SECTION("ubjson")
+    {
+        const auto j = nlohmann::json::parse(str);
+        const auto cbor = nlohmann::json::to_ubjson(j);
+        Sax</*LexCallImpossible*/ true, T::WithPos, T::WithLex> sax;
+        sax.pos_start_object.emplace(2);
+        sax.pos_key.emplace(8);
+        sax.pos_start_array.emplace(10);
+        sax.pos_number_integer.emplace(14);
+        sax.pos_number_integer.emplace(16);
+        sax.pos_boolean.emplace(17);
+        sax.pos_number_float.emplace(26);
+        sax.pos_null.emplace(27);
+        sax.pos_string.emplace(33);
+        sax.pos_end_array.emplace(34);
+        sax.pos_end_object.emplace(35);
+        CHECK(nlohmann::json::sax_parse(cbor, &sax, nlohmann::json::input_format_t::ubjson));
     }
 }
