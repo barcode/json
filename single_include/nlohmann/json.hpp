@@ -10750,52 +10750,52 @@ class binary_reader
                 return unexpect_eof(input_format_t::ubjson, "value");
 
             case 'T':  // true
-                return detail::sax_call_function::boolean<SAX, void>::call(sax, true, chars_read);
+                return detail::sax_call_boolean_function<SAX, void>::call(sax, true, chars_read);
             case 'F':  // false
-                return detail::sax_call_function::boolean<SAX, void>::call(sax, false, chars_read);
+                return detail::sax_call_boolean_function<SAX, void>::call(sax, false, chars_read);
 
             case 'Z':  // null
-                return detail::sax_call_function::null<SAX>::call(sax, chars_read);
+                return detail::sax_call_null_function<SAX>::call(sax, chars_read);
 
             case 'U':
             {
                 std::uint8_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>::call(sax, number, chars_read);
+                       detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>::call(sax, number, chars_read);
             }
 
             case 'i':
             {
                 std::int8_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 'I':
             {
                 std::int16_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 'l':
             {
                 std::int32_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 'L':
             {
                 std::int64_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
             }
 
             case 'd':
             {
                 float number{};
-                using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::ubjson, number) &&
                        call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
@@ -10803,7 +10803,7 @@ class binary_reader
             case 'D':
             {
                 double number{};
-                using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::ubjson, number) &&
                        call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
             }
@@ -10826,14 +10826,14 @@ class binary_reader
                     return sax->parse_error(chars_read, last_token, parse_error::create(113, chars_read, exception_message(input_format_t::ubjson, "byte after 'C' must be in range 0x00..0x7F; last byte: 0x" + last_token, "char"), BasicJsonType()));
                 }
                 string_t s(1, static_cast<typename string_t::value_type>(current));
-                using call_t = detail::sax_call_function::string<SAX, string_t&>;
+                using call_t = detail::sax_call_string_function<SAX, string_t&>;
                 return call_t::call(sax, s, chars_read);
             }
 
             case 'S':  // string
             {
                 string_t s;
-                using call_t = detail::sax_call_function::string<SAX, string_t&>;
+                using call_t = detail::sax_call_string_function<SAX, string_t&>;
                 return get_ubjson_string(s) && call_t::call(sax, s, chars_read);
             }
 
@@ -10864,7 +10864,7 @@ class binary_reader
 
         if (size_and_type.first != string_t::npos)
         {
-            using call_start_ar_t = detail::sax_call_function::start_array<SAX>;
+            using call_start_ar_t = detail::sax_call_start_array_function<SAX>;
             if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, size_and_type.first, chars_read)))
             {
                 return false;
@@ -10896,7 +10896,7 @@ class binary_reader
         }
         else
         {
-            using call_start_ar_t = detail::sax_call_function::start_array<SAX>;
+            using call_start_ar_t = detail::sax_call_start_array_function<SAX>;
             if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, std::size_t(-1), chars_read)))
             {
                 return false;
@@ -10912,7 +10912,7 @@ class binary_reader
             }
         }
 
-        using call_end_ar_t = detail::sax_call_function::end_array<SAX>;
+        using call_end_ar_t = detail::sax_call_end_array_function<SAX>;
         return call_end_ar_t::call(sax, chars_read);
     }
 
@@ -10930,7 +10930,7 @@ class binary_reader
         string_t key;
         if (size_and_type.first != string_t::npos)
         {
-            using call_start_obj_t = detail::sax_call_function::start_object<SAX>;
+            using call_start_obj_t = detail::sax_call_start_object_function<SAX>;
             if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, size_and_type.first, chars_read)))
             {
                 return false;
@@ -10940,7 +10940,7 @@ class binary_reader
             {
                 for (std::size_t i = 0; i < size_and_type.first; ++i)
                 {
-                    using call_t = detail::sax_call_function::key<SAX, string_t&>;
+                    using call_t = detail::sax_call_key_function<SAX, string_t&>;
                     if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
@@ -10956,7 +10956,7 @@ class binary_reader
             {
                 for (std::size_t i = 0; i < size_and_type.first; ++i)
                 {
-                    using call_t = detail::sax_call_function::key<SAX, string_t&>;
+                    using call_t = detail::sax_call_key_function<SAX, string_t&>;
                     if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !call_t::call(sax, key, chars_read)))
                     {
                         return false;
@@ -10971,7 +10971,7 @@ class binary_reader
         }
         else
         {
-            using call_start_obj_t_t = detail::sax_call_function::start_object<SAX>;
+            using call_start_obj_t_t = detail::sax_call_start_object_function<SAX>;
             if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t_t::call(sax, std::size_t(-1), chars_read)))
             {
                 return false;
@@ -10979,7 +10979,7 @@ class binary_reader
 
             while (current != '}')
             {
-                using call_key_t = detail::sax_call_function::key<SAX, string_t&>;
+                using call_key_t = detail::sax_call_key_function<SAX, string_t&>;
                 if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key, false) || !call_key_t::call(sax, key, chars_read)))
                 {
                     return false;
@@ -10993,7 +10993,7 @@ class binary_reader
             }
         }
 
-        using call_end_obj_t_t = detail::sax_call_function::end_object<SAX>;
+        using call_end_obj_t_t = detail::sax_call_end_object_function<SAX>;
         return call_end_obj_t_t::call(sax, chars_read);
     }
 
@@ -11039,15 +11039,15 @@ class binary_reader
         switch (result_number)
         {
             case token_type::value_integer:
-                return detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, number_lexer.get_number_integer(), chars_read);
+                return detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number_lexer.get_number_integer(), chars_read);
             case token_type::value_unsigned:
             {
-                using call_t = detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>;
+                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
                 return call_t::call(sax, number_lexer.get_number_unsigned(), chars_read);
             }
             case token_type::value_float:
             {
-                using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&>;
+                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return call_t::call(sax, number_lexer.get_number_float(), std::move(number_string), chars_read);
             }
             case token_type::uninitialized:
@@ -11493,8 +11493,7 @@ class parser
                 {
                     case token_type::begin_object:
                     {
-                        using call_start_obj_t = detail::sax_call_function::start_object<SAX, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, std::size_t(-1), m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_object_indirect(sax, std::size_t(-1), m_lexer)))
                         {
                             return false;
                         }
@@ -11502,8 +11501,7 @@ class parser
                         // closing } -> we are done
                         if (get_token() == token_type::end_object)
                         {
-                            using call_end_obj_t = detail::sax_call_function::end_object<SAX, lexer_t>;
-                            if (JSON_HEDLEY_UNLIKELY(!call_end_obj_t::call(sax, m_lexer)))
+                            if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::end_object_indirect(sax, m_lexer)))
                             {
                                 return false;
                             }
@@ -11517,8 +11515,7 @@ class parser
                                                     m_lexer.get_token_string(),
                                                     parse_error::create(101, m_lexer.get_position(), exception_message(token_type::value_string, "object key"), BasicJsonType()));
                         }
-                        using call_key_t = detail::sax_call_function::key<SAX, string_t&, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_key_t::call(sax, m_lexer.get_string(), m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::key_indirect(sax, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
                         }
@@ -11541,8 +11538,7 @@ class parser
 
                     case token_type::begin_array:
                     {
-                        using call_start_ar_t = detail::sax_call_function::start_array<SAX, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, std::size_t(-1), m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_array_indirect(sax, std::size_t(-1), m_lexer)))
                         {
                             return false;
                         }
@@ -11550,8 +11546,7 @@ class parser
                         // closing ] -> we are done
                         if (get_token() == token_type::end_array)
                         {
-                            using call_end_ar_t = detail::sax_call_function::end_array<SAX, lexer_t>;
-                            if (JSON_HEDLEY_UNLIKELY(!call_end_ar_t::call(sax, m_lexer)))
+                            if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::end_array_indirect(sax, m_lexer)))
                             {
                                 return false;
                             }
@@ -11576,8 +11571,7 @@ class parser
                                                     out_of_range::create(406, "number overflow parsing '" + m_lexer.get_token_string() + "'", BasicJsonType()));
                         }
 
-                        using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, res, m_lexer.get_string(), m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::number_float_indirect(sax, res, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
                         }
@@ -11587,8 +11581,7 @@ class parser
 
                     case token_type::literal_false:
                     {
-                        using call_t =  detail::sax_call_function::boolean<SAX, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, false, m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::boolean_indirect(sax, false, m_lexer)))
                         {
                             return false;
                         }
@@ -11597,8 +11590,7 @@ class parser
 
                     case token_type::literal_null:
                     {
-                        using call_t =  detail::sax_call_function::null<SAX, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::null_indirect(sax, m_lexer)))
                         {
                             return false;
                         }
@@ -11607,8 +11599,7 @@ class parser
 
                     case token_type::literal_true:
                     {
-                        using call_t =  detail::sax_call_function::boolean<SAX, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, true, m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::boolean_indirect(sax, true, m_lexer)))
                         {
                             return false;
                         }
@@ -11617,8 +11608,7 @@ class parser
 
                     case token_type::value_integer:
                     {
-                        using call_t = detail::sax_call_function::number_integer<SAX, number_integer_t, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_number_integer(), m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::number_integer_indirect(sax, m_lexer.get_number_integer(), m_lexer)))
                         {
                             return false;
                         }
@@ -11627,8 +11617,7 @@ class parser
 
                     case token_type::value_string:
                     {
-                        using call_t = detail::sax_call_function::string<SAX, string_t&, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_string(), m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::string_indirect(sax, m_lexer.get_string(), m_lexer)))
                         {
                             return false;
                         }
@@ -11637,8 +11626,7 @@ class parser
 
                     case token_type::value_unsigned:
                     {
-                        using call_t =  detail::sax_call_function::number_unsigned<SAX, number_unsigned_t, lexer_t>;
-                        if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_number_unsigned(), m_lexer)))
+                        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::number_unsigned_indirect(sax, m_lexer.get_number_unsigned(), m_lexer)))
                         {
                             return false;
                         }
@@ -11693,8 +11681,7 @@ class parser
                 // closing ]
                 if (JSON_HEDLEY_LIKELY(last_token == token_type::end_array))
                 {
-                    using call_t = detail::sax_call_function::end_array<SAX, lexer_t>;
-                    if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer)))
+                    if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::end_array_indirect(sax, m_lexer)))
                     {
                         return false;
                     }
@@ -11727,8 +11714,7 @@ class parser
                                             parse_error::create(101, m_lexer.get_position(), exception_message(token_type::value_string, "object key"), BasicJsonType()));
                 }
 
-                using call_t = detail::sax_call_function::key<SAX, string_t&, lexer_t>;
-                if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer.get_string(), m_lexer)))
+                if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::key_indirect(sax, m_lexer.get_string(), m_lexer)))
                 {
                     return false;
                 }
@@ -11749,8 +11735,7 @@ class parser
             // closing }
             if (JSON_HEDLEY_LIKELY(last_token == token_type::end_object))
             {
-                using call_t = detail::sax_call_function::end_object<SAX, lexer_t>;
-                if (JSON_HEDLEY_UNLIKELY(!call_t::call(sax, m_lexer)))
+                if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::end_object_indirect(sax, m_lexer)))
                 {
                     return false;
                 }
