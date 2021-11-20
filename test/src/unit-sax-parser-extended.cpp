@@ -38,6 +38,7 @@ SOFTWARE.
 
 // ???????
 template <
+    bool LexCallImpossible,
     bool WithPos,
     bool WithLex,
     std::size_t NullPos,
@@ -60,13 +61,13 @@ struct Sax
     bool null()
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type null(std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(NullPos == pos);
         return true;
     }
@@ -80,13 +81,13 @@ struct Sax
     bool boolean(bool /*unused*/)
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type boolean(bool /*unused*/, std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(BoolPos == pos);
         return true;
     }
@@ -100,13 +101,13 @@ struct Sax
     bool number_integer(json::number_integer_t /*unused*/)
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type number_integer(json::number_integer_t /*unused*/, std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(IntPos == pos);
         return true;
     }
@@ -120,13 +121,13 @@ struct Sax
     bool number_unsigned(json::number_unsigned_t /*unused*/)
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type number_unsigned(json::number_unsigned_t /*unused*/, std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(UintPos == pos);
         return true;
     }
@@ -140,13 +141,13 @@ struct Sax
     bool number_float(json::number_float_t /*unused*/, const std::string& /*unused*/)
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type number_float(json::number_float_t /*unused*/, const std::string& /*unused*/, std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(FltPos == pos);
         return true;
     }
@@ -160,13 +161,13 @@ struct Sax
     bool string(std::string& /*unused*/)
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type string(std::string& /*unused*/, std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(StrPos == pos);
         return true;
     }
@@ -180,13 +181,13 @@ struct Sax
     bool binary(std::vector<std::uint8_t>& /*unused*/)
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type binary(std::vector<std::uint8_t>& /*unused*/, std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(BinPos == pos);
         return true;
     }
@@ -200,13 +201,13 @@ struct Sax
     bool start_object(std::size_t /*unused*/)
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type start_object(std::size_t /*unused*/, long unsigned int pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(SObjPos == pos);
         return true;
     }
@@ -220,13 +221,13 @@ struct Sax
     bool key(std::string& /*unused*/)
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type key(std::string& /*unused*/, std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(KeyPos == pos);
         return true;
     }
@@ -240,13 +241,13 @@ struct Sax
     bool end_object()
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type end_object(std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(EObjPos == pos);
         return true;
     }
@@ -260,13 +261,13 @@ struct Sax
     bool start_array(std::size_t /*unused*/)
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type start_array(std::size_t /*unused*/, std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(SArrPos == pos);
         return true;
     }
@@ -280,13 +281,13 @@ struct Sax
     bool end_array()
     {
         CHECK(!WithPos);
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         return true;
     }
     template<bool Act = WithPos>
     typename std::enable_if<Act, bool>::type end_array(std::size_t pos)
     {
-        CHECK(!WithLex);
+        CHECK((!WithLex || LexCallImpossible));
         CHECK(EArrPos == pos);
         return true;
     }
@@ -315,24 +316,53 @@ using OptLex = Opt<0, 1>;
 using OptPos = Opt<1, 0>;
 using OptBoth = Opt<1, 1>;
 
-TEST_CASE_TEMPLATE("json", T, OptNone, OptLex, OptPos, OptBoth )
+TEST_CASE_TEMPLATE("extended parser", T, OptNone, OptLex, OptPos, OptBoth )
 {
-    Sax <
-    /*WithPos*/ T::WithPos,
-    /*WithLex*/ T::WithLex,
-    /*NullPos*/ 30,
-    /*BoolPos*/ 21,
-    /*IntPos*/ 16,
-    /*UintPos*/ 13,
-    /*FltPos*/ 25,
-    /*StrPos*/ 36,
-    /*BinPos*/ 0,
-    /*KeyPos*/ 8,
-    /*SObjPos*/ 1,
-    /*EObjPos*/ 38,
-    /*SArrPos*/ 12,
-    /*EArrPos*/ 37
-    > sax;
+    INFO("WithPos " << T::WithPos << ", WithLex " << T::WithLex);
     const std::string str = R"({"array" : [1,-1,true,4.2,null,"str"]})";
-    CHECK(nlohmann::json::sax_parse(str, &sax));
+    SECTION("json")
+    {
+        Sax <
+        /*LexCallImpossible*/ false,
+        /*WithPos*/ T::WithPos,
+        /*WithLex*/ T::WithLex,
+        /*NullPos*/ 30,
+        /*BoolPos*/ 21,
+        /*IntPos*/ 16,
+        /*UintPos*/ 13,
+        /*FltPos*/ 25,
+        /*StrPos*/ 36,
+        /*BinPos*/ 0,
+        /*KeyPos*/ 8,
+        /*SObjPos*/ 1,
+        /*EObjPos*/ 38,
+        /*SArrPos*/ 12,
+        /*EArrPos*/ 37
+        > sax;
+        CHECK(nlohmann::json::sax_parse(str, &sax));
+    }
+    SECTION("bson")
+    {
+        const auto j = nlohmann::json::parse(str);
+        const auto bson = nlohmann::json::to_bson(j);
+        Sax<
+        /*LexCallImpossible*/ true,
+        /*WithPos*/ T::WithPos,
+        /*WithLex*/ T::WithLex,
+        /*NullPos*/ 45,
+        /*BoolPos*/ 30,
+        /*IntPos*/ 16,
+        /*UintPos*/ 11,
+        /*FltPos*/ 34,
+        /*StrPos*/ 48,
+        /*BinPos*/ 0,
+        /*KeyPos*/ 11,
+        /*SObjPos*/ 4,
+        /*EObjPos*/ 60,
+        /*SArrPos*/ 15,
+        /*EArrPos*/ 59
+        > sax;
+        const bool result = nlohmann::json::sax_parse(bson, &sax, nlohmann::json::input_format_t::bson);
+        CHECK(result);
+    }
 }
