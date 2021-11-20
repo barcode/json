@@ -141,7 +141,10 @@ struct sax_call_function
 
     static constexpr bool detected_call_with_lex =
         !no_lexer &&
-        is_detected_exact<bool, call_t, SAX, Ts..., const LEX>::value;
+        is_detected_exact<bool, call_t, SAX, Ts..., 
+    const LEX
+    //std::conditional<no_lexer, void, const LEX&>
+    >::value;
 
     static constexpr bool valid =
         detected_call_base ||
@@ -154,7 +157,7 @@ struct sax_call_function
     std::is_same<LexT, LEX>::value &&
     sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_pos
     , bool >::type
-    call(SAX* sax, Ts...ts, std::size_t pos)
+    call(SAX* sax, Ts...ts, std::size_t pos) //1
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)..., pos); //1
     }
@@ -164,7 +167,7 @@ struct sax_call_function
     std::is_same<LexT, LEX>::value &&
     !sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_pos
     , bool >::type
-    call(SAX* sax, Ts...ts, std::size_t pos)
+    call(SAX* sax, Ts...ts, std::size_t pos) //2
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)...); //2
     }
@@ -174,19 +177,18 @@ struct sax_call_function
     !sax_call_function<DirectCaller, SAX, LexT, Ts...>::no_lexer &&
     sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_lex
     , bool >::type
-    call(SAX* sax, Ts...ts, const LexT& lex)
+    call(SAX* sax, Ts...ts, const LexT& lex) //3
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)..., lex); //3
     }
 
-    template<typename SaxT = SAX, typename LexT = LEX>
+    template<typename LexT = LEX>
     static typename std::enable_if <
-    std::is_same<SaxT, SAX>::value &&
     std::is_same<LexT, LEX>::value &&
-    !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::no_lexer &&
-    !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::detected_call_with_lex
+    !sax_call_function<DirectCaller, SAX, LexT, Ts...>::no_lexer &&
+    !sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_lex
     , bool >::type
-    call(SaxT* sax, Ts...ts, const LexT& lex)
+    call(SAX* sax, Ts...ts, const LexT& lex)//4
     {
         return call(sax, std::forward<Ts>(ts)..., lex.get_position().chars_read_total);//4
     }
@@ -229,7 +231,10 @@ template<typename SAX, typename LEX = void>
 using end_array = sax_call_function<end_array_direct, SAX, LEX>;
 
 template<class T>
-using size_t_to_void = typename std::enable_if<! std::is_same<const std::size_t&, const T&>::value, T>::type;
+using size_t_to_void = typename std::conditional<
+    std::is_same<const std::size_t&, const T&>::value, 
+    void, const T&
+>::type;
 
 template<typename SAX, typename T>
 bool null_indirect(SAX* sax, T&& t)

@@ -8400,7 +8400,10 @@ struct sax_call_function
 
     static constexpr bool detected_call_with_lex =
         !no_lexer &&
-        is_detected_exact<bool, call_t, SAX, Ts..., const LEX>::value;
+        is_detected_exact<bool, call_t, SAX, Ts..., 
+    const LEX
+    //std::conditional<no_lexer, void, const LEX&>
+    >::value;
 
     static constexpr bool valid =
         detected_call_base ||
@@ -8413,7 +8416,7 @@ struct sax_call_function
     std::is_same<LexT, LEX>::value &&
     sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_pos
     , bool >::type
-    call(SAX* sax, Ts...ts, std::size_t pos)
+    call(SAX* sax, Ts...ts, std::size_t pos) //1
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)..., pos); //1
     }
@@ -8423,7 +8426,7 @@ struct sax_call_function
     std::is_same<LexT, LEX>::value &&
     !sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_pos
     , bool >::type
-    call(SAX* sax, Ts...ts, std::size_t pos)
+    call(SAX* sax, Ts...ts, std::size_t pos) //2
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)...); //2
     }
@@ -8433,19 +8436,18 @@ struct sax_call_function
     !sax_call_function<DirectCaller, SAX, LexT, Ts...>::no_lexer &&
     sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_lex
     , bool >::type
-    call(SAX* sax, Ts...ts, const LexT& lex)
+    call(SAX* sax, Ts...ts, const LexT& lex) //3
     {
         return DirectCaller::call(sax, std::forward<Ts>(ts)..., lex); //3
     }
 
-    template<typename SaxT = SAX, typename LexT = LEX>
+    template<typename LexT = LEX>
     static typename std::enable_if <
-    std::is_same<SaxT, SAX>::value &&
     std::is_same<LexT, LEX>::value &&
-    !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::no_lexer &&
-    !sax_call_function<DirectCaller, SaxT, LexT, Ts...>::detected_call_with_lex
+    !sax_call_function<DirectCaller, SAX, LexT, Ts...>::no_lexer &&
+    !sax_call_function<DirectCaller, SAX, LexT, Ts...>::detected_call_with_lex
     , bool >::type
-    call(SaxT* sax, Ts...ts, const LexT& lex)
+    call(SAX* sax, Ts...ts, const LexT& lex)//4
     {
         return call(sax, std::forward<Ts>(ts)..., lex.get_position().chars_read_total);//4
     }
@@ -8488,7 +8490,10 @@ template<typename SAX, typename LEX = void>
 using end_array = sax_call_function<end_array_direct, SAX, LEX>;
 
 template<class T>
-using size_t_to_void = typename std::enable_if<! std::is_same<const std::size_t&, const T&>::value, T>::type;
+using size_t_to_void = typename std::conditional<
+    std::is_same<const std::size_t&, const T&>::value, 
+    void, const T&
+>::type;
 
 template<typename SAX, typename T>
 bool null_indirect(SAX* sax, T&& t)
@@ -8843,8 +8848,7 @@ class binary_reader
         std::int32_t document_size{};
         get_number<std::int32_t, true>(input_format_t::bson, document_size);
 
-        using call_start_obj_t = detail::sax_call_function::start_object<SAX>;
-        if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, std::size_t(-1), chars_read)))
+        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_object_indirect(sax, std::size_t(-1), chars_read)))
         {
             return false;
         }
@@ -8854,8 +8858,7 @@ class binary_reader
             return false;
         }
 
-        using call_end_obj_t = detail::sax_call_function::end_object<SAX>;
-        return call_end_obj_t::call(sax, chars_read);
+        return detail::sax_call_function::end_object_indirect(sax, chars_read);
     }
 
     /*!
@@ -8950,18 +8953,16 @@ class binary_reader
             case 0x01: // double
             {
                 double number{};
-                using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&>;
                 return get_number<double, true>(input_format_t::bson, number) &&
-                       call_t::call(sax, static_cast<number_float_t>(number), "", element_type_parse_position);
+                       detail::sax_call_function::number_float_indirect(sax, static_cast<number_float_t>(number), "", element_type_parse_position);
             }
 
             case 0x02: // string
             {
                 std::int32_t len{};
                 string_t value;
-                using call_t = detail::sax_call_function::string<SAX, string_t&>;
                 return get_number<std::int32_t, true>(input_format_t::bson, len) && get_bson_string(len, value) &&
-                       call_t::call(sax, value, element_type_parse_position);
+                       detail::sax_call_function::string_indirect(sax, value, element_type_parse_position);
             }
 
             case 0x03: // object
@@ -8978,33 +8979,32 @@ class binary_reader
             {
                 std::int32_t len{};
                 binary_t value;
-                using call_t = detail::sax_call_function::binary<SAX, binary_t&>;
                 return get_number<std::int32_t, true>(input_format_t::bson, len) && get_bson_binary(len, value) &&
-                       call_t::call(sax, value, element_type_parse_position);
+                       detail::sax_call_function::binary_indirect(sax, value, element_type_parse_position);
             }
 
             case 0x08: // boolean
             {
-                return detail::sax_call_function::boolean<SAX, void>::call(sax, get() != 0, element_type_parse_position);
+                return detail::sax_call_function::boolean_indirect(sax, get() != 0, element_type_parse_position);
             }
 
             case 0x0A: // null
             {
-                return detail::sax_call_function::null<SAX>::call(sax, element_type_parse_position);
+                return detail::sax_call_function::null_indirect(sax, element_type_parse_position);
             }
 
             case 0x10: // int32
             {
                 std::int32_t value{};
                 return get_number<std::int32_t, true>(input_format_t::bson, value) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, value, element_type_parse_position);
+                       detail::sax_call_function::number_integer_indirect(sax, value, element_type_parse_position);
             }
 
             case 0x12: // int64
             {
                 std::int64_t value{};
                 return get_number<std::int64_t, true>(input_format_t::bson, value) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, value, element_type_parse_position);
+                       detail::sax_call_function::number_integer_indirect(sax, value, element_type_parse_position);
             }
 
             default: // anything else not supported (yet)
@@ -9045,8 +9045,7 @@ class binary_reader
                 return false;
             }
 
-            using call_t = detail::sax_call_function::key<SAX, string_t&>;
-            if (!is_array && !call_t::call(sax, key, chars_read))
+            if (!is_array && !detail::sax_call_function::key_indirect(sax, key, chars_read))
             {
                 return false;
             }
@@ -9072,8 +9071,7 @@ class binary_reader
         std::int32_t document_size{};
         get_number<std::int32_t, true>(input_format_t::bson, document_size);
 
-        using call_start_ar_t = detail::sax_call_function::start_array<SAX>;
-        if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, std::size_t(-1), chars_read)))
+        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_array_indirect(sax, std::size_t(-1), chars_read)))
         {
             return false;
         }
@@ -9083,8 +9081,7 @@ class binary_reader
             return false;
         }
 
-        using call_end_ar_t = detail::sax_call_function::end_array<SAX>;
-        return call_end_ar_t::call(sax, chars_read);
+        return detail::sax_call_function::end_array_indirect(sax, chars_read);
     }
 
     //////////
@@ -9134,36 +9131,31 @@ class binary_reader
             case 0x16:
             case 0x17:
             {
-                using call_t = detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>;
-                return call_t::call(sax, static_cast<number_unsigned_t>(current), chars_read);
+                return detail::sax_call_function::number_unsigned_indirect(sax, static_cast<number_unsigned_t>(current), chars_read);
             }
 
             case 0x18: // Unsigned integer (one-byte uint8_t follows)
             {
                 std::uint8_t number{};
-                using call_t = detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>;
-                return get_number(input_format_t::cbor, number) && call_t::call(sax, number, chars_read);
+                return get_number(input_format_t::cbor, number) && detail::sax_call_function::number_unsigned_indirect(sax, number, chars_read);
             }
 
             case 0x19: // Unsigned integer (two-byte uint16_t follows)
             {
                 std::uint16_t number{};
-                using call_t = detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>;
-                return get_number(input_format_t::cbor, number) && call_t::call(sax, number, chars_read);
+                return get_number(input_format_t::cbor, number) && detail::sax_call_function::number_unsigned_indirect(sax, number, chars_read);
             }
 
             case 0x1A: // Unsigned integer (four-byte uint32_t follows)
             {
                 std::uint32_t number{};
-                using call_t = detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>;
-                return get_number(input_format_t::cbor, number) && call_t::call(sax, number, chars_read);
+                return get_number(input_format_t::cbor, number) && detail::sax_call_function::number_unsigned_indirect(sax, number, chars_read);
             }
 
             case 0x1B: // Unsigned integer (eight-byte uint64_t follows)
             {
                 std::uint64_t number{};
-                using call_t = detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>;
-                return get_number(input_format_t::cbor, number) && call_t::call(sax, number, chars_read);
+                return get_number(input_format_t::cbor, number) && detail::sax_call_function::number_unsigned_indirect(sax, number, chars_read);
             }
 
             // Negative integer -1-0x00..-1-0x17 (-1..-24)
@@ -9191,34 +9183,34 @@ class binary_reader
             case 0x35:
             case 0x36:
             case 0x37:
-                return detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, static_cast<std::int8_t>(0x20 - 1 - current), chars_read);
+                return detail::sax_call_function::number_integer_indirect(sax, static_cast<std::int8_t>(0x20 - 1 - current), chars_read);
 
             case 0x38: // Negative integer (one-byte uint8_t follows)
             {
                 std::uint8_t number{};
                 return get_number(input_format_t::cbor, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
             }
 
             case 0x39: // Negative integer -1-n (two-byte uint16_t follows)
             {
                 std::uint16_t number{};
                 return get_number(input_format_t::cbor, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
             }
 
             case 0x3A: // Negative integer -1-n (four-byte uint32_t follows)
             {
                 std::uint32_t number{};
                 return get_number(input_format_t::cbor, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
             }
 
             case 0x3B: // Negative integer -1-n (eight-byte uint64_t follows)
             {
                 std::uint64_t number{};
                 return get_number(input_format_t::cbor, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, static_cast<number_integer_t>(-1) - static_cast<number_integer_t>(number), chars_read);
             }
 
             // Binary data (0x00..0x17 bytes follow)
@@ -9253,8 +9245,7 @@ class binary_reader
             case 0x5F: // Binary data (indefinite length)
             {
                 binary_t b;
-                using call_t = detail::sax_call_function::binary<SAX, binary_t&>;
-                return get_cbor_binary(b) && call_t::call(sax, b, chars_read);
+                return get_cbor_binary(b) && detail::sax_call_function::binary_indirect(sax, b, chars_read);
             }
 
             // UTF-8 string (0x00..0x17 bytes follow)
@@ -9289,8 +9280,7 @@ class binary_reader
             case 0x7F: // UTF-8 string (indefinite length)
             {
                 string_t s;
-                using call_t = detail::sax_call_function::string<SAX, string_t&>;
-                return get_cbor_string(s) && call_t::call(sax, s, chars_read);
+                return get_cbor_string(s) && detail::sax_call_function::string_indirect(sax, s, chars_read);
             }
 
             // array (0x00..0x17 data items follow)
@@ -9502,8 +9492,7 @@ class binary_reader
                                 return parse_cbor_internal(true, tag_handler);
                         }
                         get();
-                        using call_t = detail::sax_call_function::binary<SAX, binary_t&>;
-                        return get_cbor_binary(b) && call_t::call(sax, b, chars_read);
+                        return get_cbor_binary(b) && detail::sax_call_function::binary_indirect(sax, b, chars_read);
                     }
 
                     default:                 // LCOV_EXCL_LINE
@@ -9513,13 +9502,13 @@ class binary_reader
             }
 
             case 0xF4: // false
-                return detail::sax_call_function::boolean<SAX, void>::call(sax, false, chars_read);
+                return detail::sax_call_function::boolean_indirect(sax, false, chars_read);
 
             case 0xF5: // true
-                return detail::sax_call_function::boolean<SAX, void>::call(sax, true, chars_read);
+                return detail::sax_call_function::boolean_indirect(sax, true, chars_read);
 
             case 0xF6: // null
-                return detail::sax_call_function::null<SAX>::call(sax, chars_read);
+                return detail::sax_call_function::null_indirect(sax, chars_read);
 
             case 0xF9: // Half-Precision Float (two-byte IEEE 754)
             {
@@ -9564,8 +9553,7 @@ class binary_reader
                             return std::ldexp(mant + 1024, exp - 25);
                     }
                 }();
-                using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&>;
-                return call_t::call(
+                return detail::sax_call_function::number_float_indirect(
                            sax,
                            (half & 0x8000u) != 0
                            ? static_cast<number_float_t>(-val)
@@ -9577,17 +9565,15 @@ class binary_reader
             case 0xFA: // Single-Precision Float (four-byte IEEE 754)
             {
                 float number{};
-                using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::cbor, number) &&
-                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
+                       detail::sax_call_function::number_float_indirect(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 0xFB: // Double-Precision Float (eight-byte IEEE 754)
             {
                 double number{};
-                using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::cbor, number) &&
-                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
+                       detail::sax_call_function::number_float_indirect(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             default: // anything else (0xFF is handled inside the other types)
@@ -9801,8 +9787,7 @@ class binary_reader
     bool get_cbor_array(const std::size_t len,
                         const cbor_tag_handler_t tag_handler)
     {
-        using call_start_ar_t = detail::sax_call_function::start_array<SAX>;
-        if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, len, chars_read)))
+        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_array_indirect(sax, len, chars_read)))
         {
             return false;
         }
@@ -9828,8 +9813,7 @@ class binary_reader
             }
         }
 
-        using call_end_ar_t = detail::sax_call_function::end_array<SAX>;
-        return call_end_ar_t::call(sax, chars_read);
+        return detail::sax_call_function::end_array_indirect(sax, chars_read);
     }
 
     /*!
@@ -9841,8 +9825,7 @@ class binary_reader
     bool get_cbor_object(const std::size_t len,
                          const cbor_tag_handler_t tag_handler)
     {
-        using call_start_obj_t = detail::sax_call_function::start_object<SAX>;
-        if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, len, chars_read)))
+        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_object_indirect(sax, len, chars_read)))
         {
             return false;
         }
@@ -9855,8 +9838,7 @@ class binary_reader
                 for (std::size_t i = 0; i < len; ++i)
                 {
                     get();
-                    using call_t = detail::sax_call_function::key<SAX, string_t&>;
-                    if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !call_t::call(sax, key, chars_read)))
+                    if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !detail::sax_call_function::key_indirect(sax, key, chars_read)))
                     {
                         return false;
                     }
@@ -9872,8 +9854,7 @@ class binary_reader
             {
                 while (get() != 0xFF)
                 {
-                    using call_t = detail::sax_call_function::key<SAX, string_t&>;
-                    if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !call_t::call(sax, key, chars_read)))
+                    if (JSON_HEDLEY_UNLIKELY(!get_cbor_string(key) || !detail::sax_call_function::key_indirect(sax, key, chars_read)))
                     {
                         return false;
                     }
@@ -9887,8 +9868,7 @@ class binary_reader
             }
         }
 
-        using call_end_obj_t = detail::sax_call_function::end_object<SAX>;
-        return call_end_obj_t::call(sax, chars_read);
+        return detail::sax_call_function::end_object_indirect(sax, chars_read);
     }
 
     /////////////
@@ -10036,8 +10016,7 @@ class binary_reader
             case 0x7E:
             case 0x7F:
             {
-                using call_t = detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>;
-                return call_t::call(sax, static_cast<number_unsigned_t>(current), chars_read);
+                return detail::sax_call_function::number_unsigned_indirect(sax, static_cast<number_unsigned_t>(current), chars_read);
             }
 
             // fixmap
@@ -10116,18 +10095,17 @@ class binary_reader
             case 0xDB: // str 32
             {
                 string_t s;
-                using call_t = detail::sax_call_function::string<SAX, string_t&>;
-                return get_msgpack_string(s) && call_t::call(sax, s, chars_read);
+                return get_msgpack_string(s) && detail::sax_call_function::string_indirect(sax, s, chars_read);
             }
 
             case 0xC0: // nil
-                return detail::sax_call_function::null<SAX>::call(sax, chars_read);
+                return detail::sax_call_function::null_indirect(sax, chars_read);
 
             case 0xC2: // false
-                return detail::sax_call_function::boolean<SAX, void>::call(sax, false, chars_read);
+                return detail::sax_call_function::boolean_indirect(sax, false, chars_read);
 
             case 0xC3: // true
-                return detail::sax_call_function::boolean<SAX, void>::call(sax, true, chars_read);
+                return detail::sax_call_function::boolean_indirect(sax, true, chars_read);
 
             case 0xC4: // bin 8
             case 0xC5: // bin 16
@@ -10143,79 +10121,75 @@ class binary_reader
             {
                 binary_t b;
                 return get_msgpack_binary(b) &&
-                       detail::sax_call_function::binary<SAX, binary_t&>::call(sax, b, chars_read);
+                       detail::sax_call_function::binary_indirect(sax, b, chars_read);
             }
 
             case 0xCA: // float 32
             {
                 float number{};
-                using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::msgpack, number) &&
-                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
+                       detail::sax_call_function::number_float_indirect(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 0xCB: // float 64
             {
                 double number{};
-                using call_t = detail::sax_call_function::number_float<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::msgpack, number) &&
-                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
+                       detail::sax_call_function::number_float_indirect(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 0xCC: // uint 8
             {
                 std::uint8_t number{};
-                using call_t = detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>;
-                return get_number(input_format_t::msgpack, number) && call_t::call(sax, number, chars_read);
+                return get_number(input_format_t::msgpack, number) && detail::sax_call_function::number_unsigned_indirect(sax, number, chars_read);
             }
 
             case 0xCD: // uint 16
             {
                 std::uint16_t number{};
-                using call_t = detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>;
-                return get_number(input_format_t::msgpack, number) && call_t::call(sax, number, chars_read);
+                return get_number(input_format_t::msgpack, number) && detail::sax_call_function::number_unsigned_indirect(sax, number, chars_read);
             }
 
             case 0xCE: // uint 32
             {
                 std::uint32_t number{};
                 return get_number(input_format_t::msgpack, number) &&
-                       detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_unsigned_indirect(sax, number, chars_read);
             }
 
             case 0xCF: // uint 64
             {
                 std::uint64_t number{};
                 return get_number(input_format_t::msgpack, number) &&
-                       detail::sax_call_function::number_unsigned<SAX, number_unsigned_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_unsigned_indirect(sax, number, chars_read);
             }
 
             case 0xD0: // int 8
             {
                 std::int8_t number{};
                 return get_number(input_format_t::msgpack, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, number, chars_read);
             }
 
             case 0xD1: // int 16
             {
                 std::int16_t number{};
                 return get_number(input_format_t::msgpack, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, number, chars_read);
             }
 
             case 0xD2: // int 32
             {
                 std::int32_t number{};
                 return get_number(input_format_t::msgpack, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, number, chars_read);
             }
 
             case 0xD3: // int 64
             {
                 std::int64_t number{};
                 return get_number(input_format_t::msgpack, number) &&
-                       detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, number, chars_read);
             }
 
             case 0xDC: // array 16
@@ -10275,7 +10249,7 @@ class binary_reader
             case 0xFD:
             case 0xFE:
             case 0xFF:
-                return detail::sax_call_function::number_integer<SAX, number_integer_t>::call(sax, static_cast<std::int8_t>(current), chars_read);
+                return detail::sax_call_function::number_integer_indirect(sax, static_cast<std::int8_t>(current), chars_read);
 
             default: // anything else
             {
@@ -10490,8 +10464,7 @@ class binary_reader
     */
     bool get_msgpack_array(const std::size_t len)
     {
-        using call_start_ar_t = detail::sax_call_function::start_array<SAX>;
-        if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, len, chars_read)))
+        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_array_indirect(sax, len, chars_read)))
         {
             return false;
         }
@@ -10504,8 +10477,7 @@ class binary_reader
             }
         }
 
-        using call_end_ar_t = detail::sax_call_function::end_array<SAX>;
-        return call_end_ar_t::call(sax, chars_read);
+        return detail::sax_call_function::end_array_indirect(sax, chars_read);
     }
 
     /*!
@@ -10514,8 +10486,7 @@ class binary_reader
     */
     bool get_msgpack_object(const std::size_t len)
     {
-        using call_start_obj_t = detail::sax_call_function::start_object<SAX>;
-        if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, len, chars_read)))
+        if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_object_indirect(sax, len, chars_read)))
         {
             return false;
         }
@@ -10524,8 +10495,7 @@ class binary_reader
         for (std::size_t i = 0; i < len; ++i)
         {
             get();
-            using call_t = detail::sax_call_function::key<SAX, string_t&>;
-            if (JSON_HEDLEY_UNLIKELY(!get_msgpack_string(key) || !call_t::call(sax, key, chars_read)))
+            if (JSON_HEDLEY_UNLIKELY(!get_msgpack_string(key) || !detail::sax_call_function::key_indirect(sax, key, chars_read)))
             {
                 return false;
             }
@@ -10537,7 +10507,7 @@ class binary_reader
             key.clear();
         }
 
-        return detail::sax_call_function::end_object<SAX>::call(sax, chars_read);
+        return detail::sax_call_function::end_object_indirect(sax, chars_read);
     }
 
     ////////////
@@ -10750,62 +10720,60 @@ class binary_reader
                 return unexpect_eof(input_format_t::ubjson, "value");
 
             case 'T':  // true
-                return detail::sax_call_boolean_function<SAX, void>::call(sax, true, chars_read);
+                return detail::sax_call_function::boolean_indirect(sax, true, chars_read);
             case 'F':  // false
-                return detail::sax_call_boolean_function<SAX, void>::call(sax, false, chars_read);
+                return detail::sax_call_function::boolean_indirect(sax, false, chars_read);
 
             case 'Z':  // null
-                return detail::sax_call_null_function<SAX>::call(sax, chars_read);
+                return detail::sax_call_function::null_indirect(sax, chars_read);
 
             case 'U':
             {
                 std::uint8_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_unsigned_indirect(sax, number, chars_read);
             }
 
             case 'i':
             {
                 std::int8_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, number, chars_read);
             }
 
             case 'I':
             {
                 std::int16_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, number, chars_read);
             }
 
             case 'l':
             {
                 std::int32_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, number, chars_read);
             }
 
             case 'L':
             {
                 std::int64_t number{};
                 return get_number(input_format_t::ubjson, number) &&
-                       detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number, chars_read);
+                       detail::sax_call_function::number_integer_indirect(sax, number, chars_read);
             }
 
             case 'd':
             {
                 float number{};
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::ubjson, number) &&
-                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
+                       detail::sax_call_function::number_float_indirect(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 'D':
             {
                 double number{};
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
                 return get_number(input_format_t::ubjson, number) &&
-                       call_t::call(sax, static_cast<number_float_t>(number), "", chars_read);
+                       detail::sax_call_function::number_float_indirect(sax, static_cast<number_float_t>(number), "", chars_read);
             }
 
             case 'H':
@@ -10826,15 +10794,13 @@ class binary_reader
                     return sax->parse_error(chars_read, last_token, parse_error::create(113, chars_read, exception_message(input_format_t::ubjson, "byte after 'C' must be in range 0x00..0x7F; last byte: 0x" + last_token, "char"), BasicJsonType()));
                 }
                 string_t s(1, static_cast<typename string_t::value_type>(current));
-                using call_t = detail::sax_call_string_function<SAX, string_t&>;
-                return call_t::call(sax, s, chars_read);
+                return detail::sax_call_function::string_indirect(sax, s, chars_read);
             }
 
             case 'S':  // string
             {
                 string_t s;
-                using call_t = detail::sax_call_string_function<SAX, string_t&>;
-                return get_ubjson_string(s) && call_t::call(sax, s, chars_read);
+                return get_ubjson_string(s) && detail::sax_call_function::string_indirect(sax, s, chars_read);
             }
 
             case '[':  // array
@@ -10864,8 +10830,7 @@ class binary_reader
 
         if (size_and_type.first != string_t::npos)
         {
-            using call_start_ar_t = detail::sax_call_start_array_function<SAX>;
-            if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, size_and_type.first, chars_read)))
+            if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_array_indirect(sax, size_and_type.first, chars_read)))
             {
                 return false;
             }
@@ -10896,8 +10861,7 @@ class binary_reader
         }
         else
         {
-            using call_start_ar_t = detail::sax_call_start_array_function<SAX>;
-            if (JSON_HEDLEY_UNLIKELY(!call_start_ar_t::call(sax, std::size_t(-1), chars_read)))
+            if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_array_indirect(sax, std::size_t(-1), chars_read)))
             {
                 return false;
             }
@@ -10912,8 +10876,7 @@ class binary_reader
             }
         }
 
-        using call_end_ar_t = detail::sax_call_end_array_function<SAX>;
-        return call_end_ar_t::call(sax, chars_read);
+        return detail::sax_call_function::end_array_indirect(sax, chars_read);
     }
 
     /*!
@@ -10930,8 +10893,7 @@ class binary_reader
         string_t key;
         if (size_and_type.first != string_t::npos)
         {
-            using call_start_obj_t = detail::sax_call_start_object_function<SAX>;
-            if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t::call(sax, size_and_type.first, chars_read)))
+            if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_object_indirect(sax, size_and_type.first, chars_read)))
             {
                 return false;
             }
@@ -10940,8 +10902,7 @@ class binary_reader
             {
                 for (std::size_t i = 0; i < size_and_type.first; ++i)
                 {
-                    using call_t = detail::sax_call_key_function<SAX, string_t&>;
-                    if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !call_t::call(sax, key, chars_read)))
+                    if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !detail::sax_call_function::key_indirect(sax, key, chars_read)))
                     {
                         return false;
                     }
@@ -10956,8 +10917,7 @@ class binary_reader
             {
                 for (std::size_t i = 0; i < size_and_type.first; ++i)
                 {
-                    using call_t = detail::sax_call_key_function<SAX, string_t&>;
-                    if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !call_t::call(sax, key, chars_read)))
+                    if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key) || !detail::sax_call_function::key_indirect(sax, key, chars_read)))
                     {
                         return false;
                     }
@@ -10971,16 +10931,14 @@ class binary_reader
         }
         else
         {
-            using call_start_obj_t_t = detail::sax_call_start_object_function<SAX>;
-            if (JSON_HEDLEY_UNLIKELY(!call_start_obj_t_t::call(sax, std::size_t(-1), chars_read)))
+            if (JSON_HEDLEY_UNLIKELY(!detail::sax_call_function::start_object_indirect(sax, std::size_t(-1), chars_read)))
             {
                 return false;
             }
 
             while (current != '}')
             {
-                using call_key_t = detail::sax_call_key_function<SAX, string_t&>;
-                if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key, false) || !call_key_t::call(sax, key, chars_read)))
+                if (JSON_HEDLEY_UNLIKELY(!get_ubjson_string(key, false) || !detail::sax_call_function::key_indirect(sax, key, chars_read)))
                 {
                     return false;
                 }
@@ -10993,8 +10951,7 @@ class binary_reader
             }
         }
 
-        using call_end_obj_t_t = detail::sax_call_end_object_function<SAX>;
-        return call_end_obj_t_t::call(sax, chars_read);
+        return detail::sax_call_function::end_object_indirect(sax, chars_read);
     }
 
     // Note, no reader for UBJSON binary types is implemented because they do
@@ -11039,16 +10996,14 @@ class binary_reader
         switch (result_number)
         {
             case token_type::value_integer:
-                return detail::sax_call_number_integer_function<SAX, number_integer_t>::call(sax, number_lexer.get_number_integer(), chars_read);
+                return detail::sax_call_function::number_integer_indirect(sax, number_lexer.get_number_integer(), chars_read);
             case token_type::value_unsigned:
             {
-                using call_t = detail::sax_call_number_unsigned_function<SAX, number_unsigned_t>;
-                return call_t::call(sax, number_lexer.get_number_unsigned(), chars_read);
+                return detail::sax_call_function::number_unsigned_indirect(sax, number_lexer.get_number_unsigned(), chars_read);
             }
             case token_type::value_float:
             {
-                using call_t = detail::sax_call_number_float_function<SAX, number_float_t, const string_t&>;
-                return call_t::call(sax, number_lexer.get_number_float(), std::move(number_string), chars_read);
+                return detail::sax_call_function::number_float_indirect(sax, number_lexer.get_number_float(), std::move(number_string), chars_read);
             }
             case token_type::uninitialized:
             case token_type::literal_true:
